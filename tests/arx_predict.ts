@@ -186,6 +186,11 @@ describe("Voting", () => {
         voteEvent.timestamp.toString(),
         `with ${voteEvent.totalVotes} votes`
       );
+      console.log(
+        `LSM Probabilities for poll ${POLL_ID}:`,
+        `Option 0: ${(voteEvent.probabilities[0] * 100).toFixed(2)}%`,
+        `Option 1: ${(voteEvent.probabilities[1] * 100).toFixed(2)}%`
+      );
     }
 
     // Reveal results for each poll

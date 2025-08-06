@@ -66,6 +66,14 @@ pub mod arx_predict {
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts;
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         let total_votes = o.field_1;
+        let probabilities_f64 = o.field_2;
+
+        // Convert f64 to f64 and update the probabilities in the market account
+        let probabilities_f64 = [
+            probabilities_f64[0] as f64,
+            probabilities_f64[1] as f64,
+        ];
+        ctx.accounts.market_acc.probs = probabilities_f64;
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -73,6 +81,7 @@ pub mod arx_predict {
         emit!(VoteEvent {
             timestamp: current_timestamp,
             total_votes,
+            probabilities: probabilities_f64,
         });
 
         Ok(())
