@@ -145,7 +145,7 @@ pub mod arx_predict {
                 ctx.accounts.market_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 vote counters (yes/no), each stored as 32-byte ciphertext
+                32 * MAX_OPTIONS as u32, // MAX_OPTIONS vote counters, each stored as 32-byte ciphertext
             ),
         ];
 
@@ -180,7 +180,7 @@ pub mod arx_predict {
                 ctx.accounts.market_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 encrypted vote counters (yes/no), 32 bytes each
+                32 * MAX_OPTIONS as u32, // MAX_OPTIONS encrypted vote counters, 32 bytes each
             ),
         ];
 
