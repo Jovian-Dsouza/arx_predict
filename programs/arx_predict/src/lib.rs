@@ -93,11 +93,12 @@ pub mod arx_predict {
         Ok(())
     }
 
-    pub fn create_new_poll(
-        ctx: Context<CreateNewPoll>,
+    pub fn create_market(
+        ctx: Context<CreateMarket>,
         computation_offset: u64,
         id: u32,
         question: String,
+        options: [String; MAX_OPTIONS],
         nonce: u128,
     ) -> Result<()> {
         msg!("Creating a new poll");
@@ -108,11 +109,11 @@ pub mod arx_predict {
         ctx.accounts.market_acc.id = id;
         ctx.accounts.market_acc.authority = ctx.accounts.payer.key();
         ctx.accounts.market_acc.nonce = nonce;
-        ctx.accounts.market_acc.vote_state = [[0; 32]; 2];
+        ctx.accounts.market_acc.options = options;
+        ctx.accounts.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
-        // Initialize encrypted vote counters (yes/no) through MPC
         queue_computation(
             ctx.accounts,
             computation_offset,
@@ -193,7 +194,7 @@ pub mod arx_predict {
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, id: u32)]
-pub struct CreateNewPoll<'info> {
+pub struct CreateMarket<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(

@@ -83,6 +83,12 @@ describe("Voting", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
+    const options = [
+      "Yes",
+      "No",
+      "Maybe",
+      "Not Sure"
+    ];
     // Create multiple polls
     for (const POLL_ID of POLL_IDS) {
       const pollNonce = randomBytes(16);
@@ -90,10 +96,11 @@ describe("Voting", () => {
       const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const pollSig = await program.methods
-        .createNewPoll(
+        .createMarket(
           pollComputationOffset,
           POLL_ID,
           `Poll ${POLL_ID}: $SOL to 500?`,
+          options,
           new anchor.BN(deserializeLE(pollNonce).toString())
         )
         .accountsPartial({
