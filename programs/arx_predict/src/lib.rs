@@ -249,23 +249,6 @@ pub struct CreateMarket<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("init_vote_stats", payer)]
-#[derive(Accounts)]
-pub struct InitVoteStatsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: market_acc, checked by the callback account key passed in queue_computation
-    #[account(mut)]
-    pub market_acc: Account<'info, MarketAccount>,
-}
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
@@ -346,22 +329,6 @@ pub struct Vote<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("vote", payer)]
-#[derive(Accounts)]
-pub struct VoteCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
-    #[account(mut)]
-    pub market_acc: Account<'info, MarketAccount>,
-}
 
 #[init_computation_definition_accounts("vote", payer)]
 #[derive(Accounts)]
@@ -436,20 +403,7 @@ pub struct RevealVotingResult<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("reveal_result", payer)]
-#[derive(Accounts)]
-pub struct RevealVotingResultCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
-}
+
 
 #[init_computation_definition_accounts("reveal_result", payer)]
 #[derive(Accounts)]
