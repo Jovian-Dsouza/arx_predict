@@ -64,6 +64,13 @@ describe("Voting", () => {
       initVoteStatsSig
     );
 
+    console.log("Initializing user position computation definition");
+    const initUserPositionSig = await initUserPositionCompDef(program, owner, false);
+    console.log(
+      "User position computation definition initialized with signature",
+      initUserPositionSig
+    );
+
     console.log("Initializing voting computation definition");
     const initVoteSig = await initVoteCompDef(program, owner, false);
     console.log(
@@ -280,6 +287,67 @@ describe("Voting", () => {
       await uploadCircuit(
         provider as anchor.AnchorProvider,
         "init_vote_stats",
+        program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        provider as anchor.AnchorProvider,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
+
+  async function initUserPositionCompDef(
+    program: Program<ArxPredict>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("init_user_position");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log(
+      "Init user position computation definition pda is ",
+      compDefPDA.toBase58()
+    );
+
+    const sig = await program.methods
+      .initUserPositionCompDef()
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+      })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init user position computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "init_user_position",
         program.programId,
         rawCircuit,
         true

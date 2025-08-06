@@ -9,6 +9,11 @@ mod circuits {
         option1: u64,
     }
 
+    pub struct UserPosition {
+        share0: u64,
+        share1: u64,
+    }
+
     pub struct UserVote {
         option: u8,
     }
@@ -20,6 +25,15 @@ mod circuits {
             option1: 0,
         };
         mxe.from_arcis(vote_stats)
+    }
+
+    #[instruction]
+    pub fn init_user_position(mxe: Mxe) -> Enc<Mxe, UserPosition> {
+        let user_position = UserPosition { 
+            share0: 0,
+            share1: 0,
+        };
+        mxe.from_arcis(user_position)
     }
 
     #[instruction]

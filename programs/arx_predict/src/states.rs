@@ -17,3 +17,12 @@ pub struct MarketAccount {
     pub options: [String; MAX_OPTIONS],
     // pub created_at: u64,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct UserPosition {
+    pub bump: u8,
+    pub shares: [[u8; 32]; MAX_OPTIONS],
+    //TODO pub total_investment: [u8; 32],
+    pub nonce: u128,
+}

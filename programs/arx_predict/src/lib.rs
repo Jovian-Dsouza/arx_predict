@@ -26,6 +26,11 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_user_position_comp_def(ctx: Context<InitUserPositionCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
