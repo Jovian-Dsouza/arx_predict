@@ -2,16 +2,17 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-
 mod states;
 mod constants;
 mod errors;
 mod contexts;
-
+mod events;
 use states::*;
+
 use constants::*;
-// use errors::*;
+use errors::ErrorCode;
 use contexts::*;
+use events::*;
 
 declare_id!("HUB6LrbuCgDeeAFK7R1jiuqAvzqDLussz3wqkQ5rWSvc");
 
@@ -486,23 +487,3 @@ pub struct PollAccount {
     pub question: String,
 }
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Invalid authority")]
-    InvalidAuthority,
-    #[msg("The computation was aborted")]
-    AbortedComputation,
-    #[msg("Cluster not set")]
-    ClusterNotSet,
-}
-
-#[event]
-pub struct VoteEvent {
-    pub timestamp: i64,
-    pub total_votes: u64,
-}
-
-#[event]
-pub struct RevealResultEvent {
-    pub output: bool,
-}

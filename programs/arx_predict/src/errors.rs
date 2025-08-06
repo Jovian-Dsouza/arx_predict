@@ -8,4 +8,6 @@ pub enum ErrorCode {
     AbortedComputation,
     #[msg("Invalid number of options")]
     InvalidNumOptions,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }
