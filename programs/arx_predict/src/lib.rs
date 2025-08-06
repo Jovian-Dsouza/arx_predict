@@ -143,8 +143,8 @@ pub mod arx_predict {
 
     pub fn create_user_position(
         ctx: Context<CreateUserPosition>,
-        market_id: u32,
         computation_offset: u64,
+        market_id: u32,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_user_position(
