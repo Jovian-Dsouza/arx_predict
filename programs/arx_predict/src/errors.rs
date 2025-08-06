@@ -6,6 +6,6 @@ pub enum ErrorCode {
     InvalidAuthority,
     #[msg("The computation was aborted")]
     AbortedComputation,
-    #[msg("Invalid number of options (must be 2-4)")]
+    #[msg("Invalid number of options")]
     InvalidNumOptions,
 }
