@@ -250,24 +250,6 @@ pub struct CreateMarket<'info> {
 }
 
 
-#[init_computation_definition_accounts("init_vote_stats", payer)]
-#[derive(Accounts)]
-pub struct InitVoteStatsCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        mut,
-        address = derive_mxe_pda!()
-    )]
-    pub mxe_account: Box<Account<'info, MXEAccount>>,
-    #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
-    pub comp_def_account: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    pub system_program: Program<'info, System>,
-}
-
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, _id: u32)]
@@ -330,23 +312,6 @@ pub struct Vote<'info> {
 }
 
 
-#[init_computation_definition_accounts("vote", payer)]
-#[derive(Accounts)]
-pub struct InitVoteCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        mut,
-        address = derive_mxe_pda!()
-    )]
-    pub mxe_account: Box<Account<'info, MXEAccount>>,
-    #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
-    pub comp_def_account: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    pub system_program: Program<'info, System>,
-}
 
 #[queue_computation_accounts("reveal_result", payer)]
 #[derive(Accounts)]
@@ -403,22 +368,3 @@ pub struct RevealVotingResult<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-
-
-#[init_computation_definition_accounts("reveal_result", payer)]
-#[derive(Accounts)]
-pub struct InitRevealResultCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        mut,
-        address = derive_mxe_pda!()
-    )]
-    pub mxe_account: Box<Account<'info, MXEAccount>>,
-    #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
-    pub comp_def_account: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    pub system_program: Program<'info, System>,
-}
