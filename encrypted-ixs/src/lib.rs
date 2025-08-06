@@ -4,122 +4,24 @@ use arcis_imports::*;
 mod circuits {
     use arcis_imports::*;
 
-    // pub struct VoteStats {
-    //     option0: u64,
-    //     option1: u64,
-    //     option2: u64,
-    //     option3: u64
-    // }
-
-    // pub struct UserVote {
-    //     option: u8,
-    // }
-
-    // #[instruction]
-    // pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, VoteStats> {
-    //     let vote_stats = VoteStats { 
-    //         option0: 0,
-    //         option1: 0,
-    //         option2: 0,
-    //         option3: 0
-    //     };
-    //     mxe.from_arcis(vote_stats)
-    // }
-
-    // #[instruction]
-    // pub fn vote(
-    //     vote_ctxt: Enc<Shared, UserVote>,
-    //     vote_stats_ctxt: Enc<Mxe, VoteStats>,
-    // ) -> (Enc<Mxe, VoteStats>, u64) {
-    //     let user_vote = vote_ctxt.to_arcis();
-    //     let mut vote_stats = vote_stats_ctxt.to_arcis();
-
-    //     if user_vote.option == 0 {
-    //         vote_stats.option0 += 1;
-    //     } else if user_vote.option == 1 {
-    //         vote_stats.option1 += 1;
-    //     } else if user_vote.option == 2 {
-    //         vote_stats.option2 += 1;
-    //     } else if user_vote.option == 3 {
-    //         vote_stats.option3 += 1;
-    //     }
-
-    //     let total_votes = vote_stats.option0 + vote_stats.option1 + vote_stats.option2 + vote_stats.option3;
-    //     (vote_stats_ctxt.owner.from_arcis(vote_stats), total_votes.reveal())
-    // }
-
-    // #[instruction]
-    // pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> u8 {
-    //     let vote_stats = vote_stats_ctxt.to_arcis();
-    //     let mut max1 = 0;
-    //     let mut max2 = 0;
-    //     let mut max_idx1 = 0;
-    //     let mut max_idx2 = 0;
-
-    //     if vote_stats.option1 > vote_stats.option2 {
-    //         max1 = vote_stats.option1;
-    //         max_idx1 = 1;
-    //     } else {
-    //         max1 = vote_stats.option2;
-    //         max_idx1 = 2;
-    //     }
-
-    //     if vote_stats.option3 > vote_stats.option0 {
-    //         max2 = vote_stats.option3;
-    //         max_idx2 = 3;
-    //     } else {
-    //         max2 = vote_stats.option0;
-    //         max_idx2 = 0;
-    //     }
-
-    //     let max_idx = if max1 > max2 {
-    //         max_idx1
-    //     } else {
-    //         max_idx2
-    //     };
-
-    //     max_idx.reveal()
-    // }
-
-
-
     pub struct VoteStats {
-        yes: u64,
-        no: u64,
+        option0: u64,
+        option1: u64,
     }
 
-    /// Represents a single encrypted vote.
     pub struct UserVote {
-        vote: bool,
+        option: u8,
     }
 
-    pub struct Market {
-        vote_stats: Enc<Mxe, VoteStats>,
-        total_votes: u64,
-    }
-
-    /// Initializes encrypted vote counters for a new poll.
-    ///
-    /// Creates a VoteStats structure with zero counts for both yes and no votes.
-    /// The counters remain encrypted and can only be updated through MPC operations.
     #[instruction]
     pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, VoteStats> {
-        let vote_stats = VoteStats { yes: 0, no: 0 };
+        let vote_stats = VoteStats { 
+            option0: 0,
+            option1: 0,
+        };
         mxe.from_arcis(vote_stats)
     }
 
-    /// Processes an encrypted vote and updates the running tallies.
-    ///
-    /// Takes an individual vote and adds it to the appropriate counter (yes or no)
-    /// without revealing the vote value. The updated vote statistics remain encrypted
-    /// and can only be revealed by the poll authority.
-    ///
-    /// # Arguments
-    /// * `vote_ctxt` - The encrypted vote to be counted
-    /// * `vote_stats_ctxt` - Current encrypted vote tallies
-    ///
-    /// # Returns
-    /// Updated encrypted vote statistics with the new vote included
     #[instruction]
     pub fn vote(
         vote_ctxt: Enc<Shared, UserVote>,
@@ -128,35 +30,27 @@ mod circuits {
         let user_vote = vote_ctxt.to_arcis();
         let mut vote_stats = vote_stats_ctxt.to_arcis();
 
-        // Increment appropriate counter based on vote value
-        if user_vote.vote {
-            vote_stats.yes += 1;
-        } else {
-            vote_stats.no += 1;
+        if user_vote.option == 0 {
+            vote_stats.option0 += 1;
+        } else if user_vote.option == 1 {
+            vote_stats.option1 += 1;
         }
 
-        
-            (
-                vote_stats_ctxt.owner.from_arcis(VoteStats {
-                    yes: vote_stats.yes,
-                    no: vote_stats.no,
-                }), 
-                (vote_stats.yes + vote_stats.no).reveal()
-            )
+        let total_votes = vote_stats.option0 + vote_stats.option1;
+        (vote_stats_ctxt.owner.from_arcis(vote_stats), total_votes.reveal())
     }
-    ///
-    /// Decrypts the vote counters and determines whether the majority voted yes or no.
-    /// Only the final result (majority decision) is revealed, not the actual vote counts.
-    ///
-    /// # Arguments
-    /// * `vote_stats_ctxt` - Encrypted vote tallies to be revealed
-    ///
-    /// # Returns
-    /// * `true` if more people voted yes than no
-    /// * `false` if more people voted no than yes (or tie)
+
     #[instruction]
-    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> bool {
+    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> u8 {
         let vote_stats = vote_stats_ctxt.to_arcis();
-        (vote_stats.yes > vote_stats.no).reveal()
+        let mut ans = 0;
+        if vote_stats.option0 > vote_stats.option1 {
+            ans = 0;
+        } else {
+            ans = 1;
+        }
+
+        ans.reveal()
     }
+
 }

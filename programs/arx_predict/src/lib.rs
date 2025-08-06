@@ -47,8 +47,8 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
-        ctx.accounts.poll_acc.nonce = o.nonce;
+        ctx.accounts.market_acc.vote_state = o.ciphertexts;
+        ctx.accounts.market_acc.nonce = o.nonce;
 
         Ok(())
     }
@@ -63,8 +63,8 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.poll_acc.vote_state = o.field_0.ciphertexts;
-        ctx.accounts.poll_acc.nonce = o.field_0.nonce;
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts;
+        ctx.accounts.market_acc.nonce = o.field_0.nonce;
         let total_votes = o.field_1;
 
         let clock = Clock::get()?;
@@ -103,12 +103,12 @@ pub mod arx_predict {
         msg!("Creating a new poll");
 
         // Initialize the poll account with the provided parameters
-        ctx.accounts.poll_acc.question = question;
-        ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
-        ctx.accounts.poll_acc.id = id;
-        ctx.accounts.poll_acc.authority = ctx.accounts.payer.key();
-        ctx.accounts.poll_acc.nonce = nonce;
-        ctx.accounts.poll_acc.vote_state = [[0; 32]; 2];
+        ctx.accounts.market_acc.question = question;
+        ctx.accounts.market_acc.bump = ctx.bumps.market_acc;
+        ctx.accounts.market_acc.id = id;
+        ctx.accounts.market_acc.authority = ctx.accounts.payer.key();
+        ctx.accounts.market_acc.nonce = nonce;
+        ctx.accounts.market_acc.vote_state = [[0; 32]; 2];
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
@@ -118,7 +118,7 @@ pub mod arx_predict {
             computation_offset,
             args,
             vec![CallbackAccount {
-                pubkey: ctx.accounts.poll_acc.key(),
+                pubkey: ctx.accounts.market_acc.key(),
                 is_writable: true,
             }],
             None,
@@ -139,9 +139,9 @@ pub mod arx_predict {
             Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
-            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
+            Argument::PlaintextU128(ctx.accounts.market_acc.nonce),
             Argument::Account(
-                ctx.accounts.poll_acc.key(),
+                ctx.accounts.market_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
                 32 * 2, // 2 vote counters (yes/no), each stored as 32-byte ciphertext
@@ -153,7 +153,7 @@ pub mod arx_predict {
             computation_offset,
             args,
             vec![CallbackAccount {
-                pubkey: ctx.accounts.poll_acc.key(),
+                pubkey: ctx.accounts.market_acc.key(),
                 is_writable: true,
             }],
             None,
@@ -167,16 +167,16 @@ pub mod arx_predict {
         id: u32,
     ) -> Result<()> {
         require!(
-            ctx.accounts.payer.key() == ctx.accounts.poll_acc.authority,
+            ctx.accounts.payer.key() == ctx.accounts.market_acc.authority,
             ErrorCode::InvalidAuthority
         );
 
         msg!("Revealing voting result for poll with id {}", id);
 
         let args = vec![
-            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
+            Argument::PlaintextU128(ctx.accounts.market_acc.nonce),
             Argument::Account(
-                ctx.accounts.poll_acc.key(),
+                ctx.accounts.market_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
                 32 * 2, // 2 encrypted vote counters (yes/no), 32 bytes each
@@ -241,11 +241,11 @@ pub struct CreateNewPoll<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + PollAccount::INIT_SPACE,
-        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        space = 8 + MarketAccount::INIT_SPACE,
+        seeds = [b"market", payer.key().as_ref(), id.to_le_bytes().as_ref()],
         bump,
     )]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[callback_accounts("init_vote_stats", payer)]
@@ -261,9 +261,9 @@ pub struct InitVoteStatsCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
+    /// CHECK: market_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
@@ -334,15 +334,15 @@ pub struct Vote<'info> {
     pub arcium_program: Program<'info, Arcium>,
     /// CHECK: Poll authority pubkey
     #[account(
-        address = poll_acc.authority,
+        address = market_acc.authority,
     )]
     pub authority: UncheckedAccount<'info>,
     #[account(
-        seeds = [b"poll", authority.key().as_ref(), _id.to_le_bytes().as_ref()],
-        bump = poll_acc.bump,
+        seeds = [b"market", authority.key().as_ref(), _id.to_le_bytes().as_ref()],
+        bump = market_acc.bump,
         has_one = authority
     )]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[callback_accounts("vote", payer)]
@@ -359,7 +359,7 @@ pub struct VoteCallback<'info> {
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
     #[account(mut)]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
@@ -429,10 +429,10 @@ pub struct RevealVotingResult<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump = poll_acc.bump
+        seeds = [b"market", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        bump = market_acc.bump
     )]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[callback_accounts("reveal_result", payer)]
@@ -467,23 +467,3 @@ pub struct InitRevealResultCompDef<'info> {
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
-
-/// Represents a confidential poll with encrypted vote tallies.
-#[account]
-#[derive(InitSpace)]
-pub struct PollAccount {
-    /// PDA bump seed
-    pub bump: u8,
-    /// Encrypted vote counters: [yes_count, no_count] as 32-byte ciphertexts
-    pub vote_state: [[u8; 32]; 2],
-    /// Unique identifier for this poll
-    pub id: u32,
-    /// Public key of the poll creator (only they can reveal results)
-    pub authority: Pubkey,
-    /// Cryptographic nonce for the encrypted vote counters
-    pub nonce: u128,
-    /// The poll question (max 50 characters)
-    #[max_len(50)]
-    pub question: String,
-}
-

@@ -8,5 +8,5 @@ pub struct VoteEvent {
 
 #[event]
 pub struct RevealResultEvent {
-    pub output: bool,
+    pub output: u8,
 }
