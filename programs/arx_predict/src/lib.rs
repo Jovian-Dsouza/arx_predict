@@ -58,6 +58,22 @@ pub mod arx_predict {
         Ok(())
     }
 
+    #[arcium_callback(encrypted_ix = "init_user_position")]
+    pub fn init_user_position_callback(
+        ctx: Context<InitUserPositionCallback>,
+        output: ComputationOutputs<InitUserPositionOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(InitUserPositionOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+
+        ctx.accounts.user_position_acc.shares = o.ciphertexts;
+        ctx.accounts.user_position_acc.nonce = o.nonce;
+
+        Ok(())
+    }
+
     #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(
         ctx: Context<VoteCallback>,

@@ -1,6 +1,14 @@
 use arcium_anchor::prelude::*;
 use anchor_lang::prelude::*;
-use crate::{ID_CONST, COMP_DEF_OFFSET_VOTE, COMP_DEF_OFFSET_REVEAL, COMP_DEF_OFFSET_INIT_VOTE_STATS, MarketAccount};
+use crate::{
+    ID_CONST, 
+    COMP_DEF_OFFSET_VOTE, 
+    COMP_DEF_OFFSET_REVEAL, 
+    COMP_DEF_OFFSET_INIT_VOTE_STATS, 
+    COMP_DEF_OFFSET_INIT_USER_POSITION, 
+    MarketAccount,
+    UserPosition
+};
 
 #[callback_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
@@ -18,6 +26,24 @@ pub struct InitVoteStatsCallback<'info> {
     /// CHECK: market_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
     pub market_acc: Account<'info, MarketAccount>,
+}
+
+#[callback_accounts("init_user_position", payer)]
+#[derive(Accounts)]
+pub struct InitUserPositionCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_USER_POSITION)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    /// CHECK: user_position_acc, checked by the callback account key passed in queue_computation
+    #[account(mut)]
+    pub user_position_acc: Account<'info, UserPosition>,
 }
 
 #[callback_accounts("vote", payer)]
