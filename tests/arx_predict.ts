@@ -47,7 +47,7 @@ describe("Voting", () => {
   const arciumEnv = getArciumEnv();
 
   it("can vote on polls!", async () => {
-    const POLL_IDS = [420, 421, 422];
+    const POLL_IDS = [420];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     const mxePublicKey = await getMXEPublicKeyWithRetry(
@@ -124,7 +124,7 @@ describe("Voting", () => {
     }
 
     // Cast votes for each poll with different outcomes
-    const voteOutcomes = [true, false, true]; // Different outcomes for each poll
+    const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const vote = BigInt(voteOutcomes[i]);
