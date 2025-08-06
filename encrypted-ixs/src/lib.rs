@@ -39,7 +39,7 @@ mod circuits {
         let total_votes = vote_stats.option0 + vote_stats.option1;
         
         // LSM (Logistic Softmax) probability calculation
-        let mut probabilities = [0.0; 2];
+        let mut probabilities = [0.5; 2];
         
         if total_votes > 0 {
             // Convert vote counts to logits (log-odds)
@@ -54,11 +54,7 @@ mod circuits {
             
             probabilities[0] = exp0 / sum_exp;
             probabilities[1] = exp1 / sum_exp;
-        } else {
-            // If no votes yet, use uniform distribution
-            probabilities[0] = 0.5;
-            probabilities[1] = 0.5;
-        }
+        } 
         
         (vote_stats_ctxt.owner.from_arcis(vote_stats), total_votes.reveal(), probabilities.reveal())
     }
