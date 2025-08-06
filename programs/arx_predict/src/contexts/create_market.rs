@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_VOTE_STATS};
+use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_VOTE_STATS, MAX_OPTIONS};
 
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
@@ -59,4 +60,39 @@ pub struct CreateMarket<'info> {
         bump,
     )]
     pub market_acc: Account<'info, MarketAccount>,
+}
+
+impl<'info> CreateMarket<'info> {
+    pub fn create_market(
+        &mut self,
+        id: u32,
+        question: String,
+        options: [String; MAX_OPTIONS],
+        nonce: u128,
+        computation_offset: u64,
+        bump: u8,
+    ) -> Result<()> {
+        self.market_acc.id = id;
+        self.market_acc.question = question;
+        self.market_acc.bump = bump;
+        self.market_acc.authority = self.payer.key();
+        self.market_acc.nonce = nonce;
+        self.market_acc.options = options;
+        self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
+
+        let args = vec![Argument::PlaintextU128(nonce)];
+
+        queue_computation(
+            self,
+            computation_offset,
+            args,
+            vec![CallbackAccount {
+                pubkey: self.market_acc.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
+
+        Ok(())
+    }
 }

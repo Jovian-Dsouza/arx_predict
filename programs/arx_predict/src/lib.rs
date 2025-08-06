@@ -101,31 +101,15 @@ pub mod arx_predict {
         options: [String; MAX_OPTIONS],
         nonce: u128,
     ) -> Result<()> {
-        msg!("Creating a new poll");
-
-        // Initialize the poll account with the provided parameters
-        ctx.accounts.market_acc.question = question;
-        ctx.accounts.market_acc.bump = ctx.bumps.market_acc;
-        ctx.accounts.market_acc.id = id;
-        ctx.accounts.market_acc.authority = ctx.accounts.payer.key();
-        ctx.accounts.market_acc.nonce = nonce;
-        ctx.accounts.market_acc.options = options;
-        ctx.accounts.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
-
-        let args = vec![Argument::PlaintextU128(nonce)];
-
-        queue_computation(
-            ctx.accounts,
+        
+        ctx.accounts.create_market(
+            id,
+            question,
+            options,
+            nonce,
             computation_offset,
-            args,
-            vec![CallbackAccount {
-                pubkey: ctx.accounts.market_acc.key(),
-                is_writable: true,
-            }],
-            None,
-        )?;
-
-        Ok(())
+            ctx.bumps.market_acc,
+        )
     }
 
     pub fn vote(
