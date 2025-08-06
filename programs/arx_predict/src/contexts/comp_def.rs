@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
 use crate::ID;
-use crate::ID_CONST;
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
