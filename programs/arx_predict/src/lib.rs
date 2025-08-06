@@ -141,6 +141,20 @@ pub mod arx_predict {
         )
     }
 
+    pub fn create_user_position(
+        ctx: Context<CreateUserPosition>,
+        market_id: u32,
+        computation_offset: u64,
+        nonce: u128,
+    ) -> Result<()> {
+        ctx.accounts.create_user_position(
+            market_id,
+            nonce,
+            computation_offset,
+            ctx.bumps.user_position_acc,
+        )
+    }
+
     pub fn vote(
         ctx: Context<Vote>,
         computation_offset: u64,

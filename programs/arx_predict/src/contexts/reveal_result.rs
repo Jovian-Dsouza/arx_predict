@@ -52,7 +52,7 @@ pub struct RevealVotingResult<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [b"market", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        seeds = [b"market", id.to_le_bytes().as_ref()],
         bump = market_acc.bump
     )]
     pub market_acc: Account<'info, MarketAccount>,

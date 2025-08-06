@@ -58,7 +58,7 @@ pub struct Vote<'info> {
     )]
     pub authority: UncheckedAccount<'info>,
     #[account(
-        seeds = [b"market", authority.key().as_ref(), _id.to_le_bytes().as_ref()],
+        seeds = [b"market", _id.to_le_bytes().as_ref()],
         bump = market_acc.bump,
         has_one = authority
     )]

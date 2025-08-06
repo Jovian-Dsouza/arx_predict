@@ -2,12 +2,12 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_VOTE_STATS, MAX_OPTIONS};
+use crate::{UserPosition, MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_USER_POSITION, MAX_OPTIONS};
 
-#[queue_computation_accounts("init_vote_stats", payer)]
+#[queue_computation_accounts("init_user_position", payer)]
 #[derive(Accounts)]
-#[instruction(computation_offset: u64, id: u32)]
-pub struct CreateMarket<'info> {
+#[instruction(computation_offset: u64, _market_id: u32)]
+pub struct CreateUserPosition<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -33,7 +33,7 @@ pub struct CreateMarket<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_USER_POSITION)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -55,32 +55,30 @@ pub struct CreateMarket<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + MarketAccount::INIT_SPACE,
-        seeds = [b"market", id.to_le_bytes().as_ref()],
-        bump,
+        space = 8 + UserPosition::INIT_SPACE,
+        seeds = [b"user_position", market_acc.key().as_ref(), payer.key().as_ref()],
+        bump
+    )]
+    pub user_position_acc: Account<'info, UserPosition>,
+
+    #[account(
+        seeds = [b"market", _market_id.to_le_bytes().as_ref()],
+        bump = market_acc.bump,
     )]
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-impl<'info> CreateMarket<'info> {
-    pub fn create_market(
+impl<'info> CreateUserPosition<'info> {
+    pub fn create_user_position(
         &mut self,
-        id: u32,
-        question: String,
-        options: [String; MAX_OPTIONS],
+        _market_id: u32,
         nonce: u128,
         computation_offset: u64,
         bump: u8,
     ) -> Result<()> {
-        self.market_acc.id = id;
-        self.market_acc.question = question;
-        self.market_acc.bump = bump;
-        self.market_acc.authority = self.payer.key();
-        self.market_acc.nonce = nonce;
-        self.market_acc.options = options;
-        self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
-        self.market_acc.probs = [0.5; MAX_OPTIONS];
-
+        self.user_position_acc.bump = bump;
+        self.user_position_acc.nonce = nonce;
+        self.user_position_acc.shares = [[0; 32]; MAX_OPTIONS];
         let args = vec![Argument::PlaintextU128(nonce)];
 
         queue_computation(
@@ -88,7 +86,7 @@ impl<'info> CreateMarket<'info> {
             computation_offset,
             args,
             vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
+                pubkey: self.user_position_acc.key(),
                 is_writable: true,
             }],
             None,
