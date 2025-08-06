@@ -40,9 +40,11 @@ mod circuits {
     pub fn vote(
         vote_ctxt: Enc<Shared, UserVote>,
         vote_stats_ctxt: Enc<Mxe, VoteStats>,
-    ) -> (Enc<Mxe, VoteStats>, u64, [f64; 2]) {
+        user_position_ctxt: Enc<Mxe, UserPosition>,
+    ) -> (Enc<Mxe, VoteStats>, Enc<Mxe, UserPosition>, u64, [f64; 2]) {
         let user_vote = vote_ctxt.to_arcis();
         let mut vote_stats = vote_stats_ctxt.to_arcis();
+        let mut user_position = user_position_ctxt.to_arcis();
 
         if user_vote.option == 0 {
             vote_stats.option0 += 1;
@@ -70,7 +72,7 @@ mod circuits {
             probabilities[1] = exp1 / sum_exp;
         } 
         
-        (vote_stats_ctxt.owner.from_arcis(vote_stats), total_votes.reveal(), probabilities.reveal())
+        (vote_stats_ctxt.owner.from_arcis(vote_stats), user_position_ctxt.owner.from_arcis(user_position), total_votes.reveal(), probabilities.reveal())
     }
 
     #[instruction]

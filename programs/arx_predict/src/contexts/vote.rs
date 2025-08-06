@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_VOTE, MAX_OPTIONS};
+use crate::{MarketAccount, UserPosition, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_VOTE, MAX_OPTIONS};
 
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
@@ -63,6 +63,12 @@ pub struct Vote<'info> {
         has_one = authority
     )]
     pub market_acc: Account<'info, MarketAccount>,
+
+    #[account(
+        seeds = [b"user_position", _id.to_le_bytes().as_ref(), payer.key().as_ref()],
+        bump
+    )]
+    pub user_position_acc: Account<'info, UserPosition>,
 }
 
 impl<'info> Vote<'info> {
@@ -84,6 +90,13 @@ impl<'info> Vote<'info> {
                 8 + 1,
                 32 * MAX_OPTIONS as u32, // MAX_OPTIONS vote counters, each stored as 32-byte ciphertext
             ),
+            Argument::PlaintextU128(self.user_position_acc.nonce),
+            Argument::Account(
+                self.user_position_acc.key(),
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
+                8 + 1,
+                32 * MAX_OPTIONS as u32, // MAX_OPTIONS vote counters, each stored as 32-byte ciphertext
+            ),
         ];
 
         queue_computation(
@@ -92,6 +105,9 @@ impl<'info> Vote<'info> {
             args,
             vec![CallbackAccount {
                 pubkey: self.market_acc.key(),
+                is_writable: true,
+            }, CallbackAccount {
+                pubkey: self.user_position_acc.key(),
                 is_writable: true,
             }],
             None,

@@ -61,6 +61,8 @@ pub struct VoteCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     #[account(mut)]
     pub market_acc: Account<'info, MarketAccount>,
+    #[account(mut)]
+    pub user_position_acc: Account<'info, UserPosition>,
 }
 
 #[callback_accounts("reveal_result", payer)]
