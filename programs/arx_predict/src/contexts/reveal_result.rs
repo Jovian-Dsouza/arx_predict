@@ -1,0 +1,87 @@
+use anchor_lang::prelude::*;
+use arcium_anchor::prelude::*;
+
+use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_REVEAL, MAX_OPTIONS};
+
+#[queue_computation_accounts("reveal_result", payer)]
+#[derive(Accounts)]
+#[instruction(computation_offset: u64, id: u32)]
+pub struct RevealVotingResult<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    /// CHECK: mempool_account, checked by the arcium program
+    pub mempool_account: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    /// CHECK: executing_pool, checked by the arcium program
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, FeePool>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [b"market", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        bump = market_acc.bump
+    )]
+    pub market_acc: Account<'info, MarketAccount>,
+}
+
+impl<'info> RevealVotingResult<'info> {
+    pub fn reveal_result(
+        &self,
+        id: u32,
+        computation_offset: u64,
+    ) -> Result<()> {
+        require!(
+            self.payer.key() == self.market_acc.authority,
+            ErrorCode::InvalidAuthority
+        );
+
+        msg!("Revealing voting result for poll with id {}", id);
+
+        let args = vec![
+            Argument::PlaintextU128(self.market_acc.nonce),
+            Argument::Account(
+                self.market_acc.key(),
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
+                8 + 1,
+                32 * MAX_OPTIONS as u32, // MAX_OPTIONS encrypted vote counters, 32 bytes each
+            ),
+        ];
+
+        queue_computation(self, computation_offset, args, vec![], None)?;
+        Ok(())
+    }
+} 
