@@ -146,11 +146,10 @@ pub mod arx_predict {
     pub fn create_user_position(
         ctx: Context<CreateUserPosition>,
         computation_offset: u64,
-        market_id: u32,
+        _market_id: u32,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_user_position(
-            market_id,
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
@@ -164,12 +163,14 @@ pub mod arx_predict {
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
+        amount: u64,
     ) -> Result<()> {
         ctx.accounts.vote(
             vote,
             vote_encryption_pubkey,
             vote_nonce,
             computation_offset,
+            amount
         )
     }
 
@@ -180,4 +181,13 @@ pub mod arx_predict {
     ) -> Result<()> {
         ctx.accounts.reveal_result(id, computation_offset)
     }
+
+    pub fn send_payment(
+        ctx: Context<SendPayment>,
+        _id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.send_payment(amount)
+    }
+
 }

@@ -207,20 +207,23 @@ describe("Voting", () => {
 
       const nonce = randomBytes(16);
       const ciphertext = cipher.encrypt(plaintext, nonce);
+      const amount = 10 * 1e6;
+
+      await sendPayment(program, owner, ata, mint, POLL_ID, amount);
 
       const voteEventPromise = awaitEvent("voteEvent");
 
       console.log(`Voting for poll ${POLL_ID}`);
 
       const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
       const queueVoteSig = await program.methods
         .vote(
           voteComputationOffset,
           POLL_ID,
           Array.from(ciphertext[0]),
           Array.from(publicKey),
-          new anchor.BN(deserializeLE(nonce).toString())
+          new anchor.BN(deserializeLE(nonce).toString()),
+          new anchor.BN(amount)
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
@@ -308,6 +311,26 @@ describe("Voting", () => {
       expect(revealEvent.output).to.equal(expectedOutcome);
     }
   });
+
+  async function sendPayment(
+    program: Program<ArxPredict>,
+    owner: anchor.web3.Keypair,
+    ata: anchor.web3.PublicKey,
+    mint: anchor.web3.PublicKey,
+    marketId: number,
+    amount: number
+  ) {
+    console.log(`Sending payment of ${amount} to market ${marketId}`);
+    const sig = await program.methods
+      .sendPayment(marketId, new anchor.BN(amount))
+      .accountsPartial({
+        payer: owner.publicKey,
+        ata: ata,
+        mint: mint
+      })
+      .rpc({ commitment: "confirmed" });
+    console.log(`Payment sent with signature`, sig);
+  }
 
   async function initVoteStatsCompDef(
     program: Program<ArxPredict>,
