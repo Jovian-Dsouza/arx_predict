@@ -24,6 +24,54 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from "@solana/spl-token";
+
+export async function createTokenMint(
+  provider: anchor.AnchorProvider,
+  wallet: anchor.web3.Keypair
+) {
+  const mint = await createMint(
+    provider.connection,
+    wallet, //payer
+    wallet.publicKey, //mint authoritu
+    null, //freeze authority
+    6
+  );
+  return mint;
+}
+
+export async function getRequiredATA(
+  provider: anchor.AnchorProvider,
+  wallet: anchor.web3.Keypair,
+  mint: anchor.web3.PublicKey,
+  mintAmount: number = 0
+) {
+  const ata = (
+    await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet,
+      mint,
+      wallet.publicKey,
+      false
+    )
+  ).address;
+  if (mintAmount > 0) {
+    await mintTo(
+      provider.connection,
+      wallet, //fee payer
+      mint,
+      ata,
+      wallet, //mint authority
+      mintAmount
+    );
+  }
+  return ata;
+}
+
 
 describe("Voting", () => {
   // Configure the client to use the local cluster.
@@ -46,9 +94,17 @@ describe("Voting", () => {
 
   const arciumEnv = getArciumEnv();
 
+
+
   it("can vote on polls!", async () => {
     const POLL_IDS = [420];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
+    // Create token mint and associated token account
+    const mint = await createTokenMint(provider as anchor.AnchorProvider, owner);
+    const ata = await getRequiredATA(provider as anchor.AnchorProvider, owner, mint, 1000 * 1e6);
+    console.log("Token mint: ", mint.toString());
+    console.log("Owner ATA: ", ata.toString());
 
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
@@ -123,6 +179,7 @@ describe("Voting", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
+          mint: mint,
         })
         .rpc();
 
