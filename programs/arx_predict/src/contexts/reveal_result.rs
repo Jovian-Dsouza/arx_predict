@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_REVEAL, MAX_OPTIONS};
+use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("reveal_result", payer)]
 #[derive(Accounts)]
@@ -75,9 +75,8 @@ impl<'info> RevealVotingResult<'info> {
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),
-                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
-                8 + 1,
-                32 * MAX_OPTIONS as u32, // MAX_OPTIONS encrypted vote counters, 32 bytes each
+                MARKET_ACCOUNT_VOTE_STATS_OFFSET,
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH
             ),
         ];
 
