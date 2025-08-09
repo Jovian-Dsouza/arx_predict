@@ -141,6 +141,13 @@ describe("Voting", () => {
       initRRSig
     );
 
+    console.log("Initializing reveal probs computation definition");
+    const initRPSig = await initRevealProbsCompDef(program, owner, false);
+    console.log(
+      "Reveal probs computation definition initialized with signature",
+      initRPSig
+    );
+
     const privateKey = x25519.utils.randomPrivateKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
@@ -263,6 +270,52 @@ describe("Voting", () => {
         // `Option 1: ${(voteEvent.probabilities[1] * 100).toFixed(2)}%`
       );
     }
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const expectedOutcome = voteOutcomes[i];
+
+      const revealProbsPromise = awaitEvent("revealProbsEvent");
+      const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+      const revealQueueSig = await program.methods
+        .revealProbs(revealComputationOffset, POLL_ID)
+        .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            revealComputationOffset
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
+          ),
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
+
+      const revealFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        revealComputationOffset,
+        program.programId,
+        "confirmed"
+      );
+      console.log(
+        `Reveal finalize for poll ${POLL_ID} sig is `,
+        revealFinalizeSig
+      );
+
+      const revealProbsEvent = await revealProbsPromise;
+      console.log(
+        `Decrypted probs for poll ${POLL_ID} is `,
+        revealProbsEvent.share0,
+        revealProbsEvent.share1
+      );
+      // expect(revealProbsEvent.share0).to.equal(0.5);
+      // expect(revealProbsEvent.share1).to.equal(0.5);
+    }
 
     // Reveal results for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
@@ -270,9 +323,7 @@ describe("Voting", () => {
       const expectedOutcome = voteOutcomes[i];
 
       const revealEventPromise = awaitEvent("revealResultEvent");
-
       const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
       const revealQueueSig = await program.methods
         .revealResult(revealComputationOffset, POLL_ID)
         .accountsPartial({
@@ -551,6 +602,67 @@ describe("Voting", () => {
       await uploadCircuit(
         provider as anchor.AnchorProvider,
         "reveal_result",
+        program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        provider as anchor.AnchorProvider,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
+
+  async function initRevealProbsCompDef(
+    program: Program<ArxPredict>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("reveal_probs");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log(
+      "Reveal probs computation definition pda is ",
+      compDefPDA.toBase58()
+    );
+
+    const sig = await program.methods
+      .initRevealProbsCompDef()
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+      })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init reveal probs computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync("build/reveal_probs.arcis");
+
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "reveal_probs",
         program.programId,
         rawCircuit,
         true

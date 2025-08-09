@@ -116,4 +116,10 @@ mod circuits {
         ans.reveal()
     }
 
+    #[instruction]
+    pub fn reveal_probs(probs_ctxt: Enc<Mxe, Probs>) -> (f64, f64) {
+        let probs = probs_ctxt.to_arcis();
+        (probs.share0.reveal(), probs.share1.reveal())
+    }
+
 }

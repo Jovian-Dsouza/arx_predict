@@ -41,6 +41,11 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_reveal_probs_comp_def(ctx: Context<InitRevealProbsCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     // CALLBACKS
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
@@ -120,6 +125,24 @@ pub mod arx_predict {
         Ok(())
     }
 
+    #[arcium_callback(encrypted_ix = "reveal_probs")]
+    pub fn reveal_probs_callback(
+        ctx: Context<RevealProbsCallback>,
+        output: ComputationOutputs<RevealProbsOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(RevealProbsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+
+        emit!(RevealProbsEvent { 
+            share0: o.field_0,
+            share1: o.field_1,
+        });
+
+        Ok(())
+    }
+
     pub fn create_market(
         ctx: Context<CreateMarket>,
         computation_offset: u64,
@@ -175,6 +198,14 @@ pub mod arx_predict {
         id: u32,
     ) -> Result<()> {
         ctx.accounts.reveal_result(id, computation_offset)
+    }
+
+    pub fn reveal_probs(
+        ctx: Context<RevealProbs>,
+        computation_offset: u64,
+        id: u32,
+    ) -> Result<()> {
+        ctx.accounts.reveal_probs(id, computation_offset)
     }
 
     pub fn send_payment(

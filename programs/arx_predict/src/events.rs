@@ -11,3 +11,9 @@ pub struct VoteEvent {
 pub struct RevealResultEvent {
     pub output: u8,
 }
+
+#[event]
+pub struct RevealProbsEvent {
+    pub share0: f64,
+    pub share1: f64,
+}
