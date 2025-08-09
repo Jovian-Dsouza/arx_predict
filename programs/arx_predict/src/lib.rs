@@ -52,7 +52,8 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.market_acc.vote_state = o.ciphertexts;
+        ctx.accounts.market_acc.vote_state = o.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
 
         Ok(())

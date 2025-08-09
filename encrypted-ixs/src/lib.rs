@@ -29,12 +29,20 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, VoteStats> {
+    pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, MarketStats> {
         let vote_stats = VoteStats { 
             option0: 0,
             option1: 0,
         };
-        mxe.from_arcis(vote_stats)
+        let probs = Probs {
+            share0: 0.5,
+            share1: 0.5,
+        };
+        let market_stats = MarketStats {
+            vote_stats,
+            probs,
+        };
+        mxe.from_arcis(market_stats)
     }
 
     #[instruction]
