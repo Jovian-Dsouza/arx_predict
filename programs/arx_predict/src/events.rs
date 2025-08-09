@@ -5,7 +5,6 @@ use crate::MAX_OPTIONS;
 pub struct VoteEvent {
     pub timestamp: i64,
     pub total_votes: u64,
-    pub probabilities: [f64; MAX_OPTIONS],
 }
 
 #[event]

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
@@ -96,7 +96,7 @@ impl<'info> Vote<'info> {
             Argument::Account(
                 self.market_acc.key(),
                 MARKET_ACCOUNT_VOTE_STATS_OFFSET,
-                MARKET_ACCOUNT_VOTE_STATS_LENGTH,
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH,
             ),
             Argument::PlaintextU128(self.user_position_acc.nonce),
             Argument::Account(

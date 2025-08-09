@@ -84,19 +84,14 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts;
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
         let total_votes = o.field_2;
-        let probabilities_f64 = o.field_3;
 
-        // Convert f64 to f64 and update the probabilities in the market account
-        let probabilities_f64 = [
-            probabilities_f64[0] as f64,
-            probabilities_f64[1] as f64,
-        ];
-        ctx.accounts.market_acc.probs = probabilities_f64;
+       
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -104,7 +99,6 @@ pub mod arx_predict {
         emit!(VoteEvent {
             timestamp: current_timestamp,
             total_votes,
-            probabilities: probabilities_f64,
         });
 
         Ok(())

@@ -100,7 +100,7 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.nonce = nonce;
         self.market_acc.options = options;
         self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
-        self.market_acc.probs = [0.5; MAX_OPTIONS];
+        self.market_acc.probs = [[0; 32]; MAX_OPTIONS];
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
