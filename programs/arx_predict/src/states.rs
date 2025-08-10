@@ -16,6 +16,7 @@ pub struct MarketAccount {
     #[max_len(MAX_OPTION_LENGTH)]
     pub options: [String; MAX_OPTIONS],
     pub updated_at: u64,
+    pub expiry_at: u64,
 }
 
 #[account]
@@ -24,7 +25,5 @@ pub struct UserPosition {
     pub bump: u8,
     pub nonce: u128,
     pub shares: [[u8; 32]; MAX_OPTIONS],
-    pub current_payment: u64,
-    //TODO pub total_investment: [u8; 32],
-    
+    pub current_payment: u64,    
 }
