@@ -41,6 +41,11 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_reveal_probs_comp_def(ctx: Context<InitRevealProbsCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     // CALLBACKS
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
@@ -52,7 +57,8 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.market_acc.vote_state = o.ciphertexts;
+        ctx.accounts.market_acc.vote_state = o.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
 
         Ok(())
@@ -84,25 +90,23 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts;
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
-        let total_votes = o.field_1;
-        let probabilities_f64 = o.field_2;
+        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
+        let total_votes = o.field_2;
+        let amount = o.field_3;
+       
 
-        // Convert f64 to f64 and update the probabilities in the market account
-        let probabilities_f64 = [
-            probabilities_f64[0] as f64,
-            probabilities_f64[1] as f64,
-        ];
-        ctx.accounts.market_acc.probs = probabilities_f64;
-
+        
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
         emit!(VoteEvent {
             timestamp: current_timestamp,
             total_votes,
-            probabilities: probabilities_f64,
+            amount,
         });
 
         Ok(())
@@ -119,6 +123,24 @@ pub mod arx_predict {
         };
 
         emit!(RevealResultEvent { output: o });
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "reveal_probs")]
+    pub fn reveal_probs_callback(
+        ctx: Context<RevealProbsCallback>,
+        output: ComputationOutputs<RevealProbsOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(RevealProbsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+
+        emit!(RevealProbsEvent { 
+            share0: o[0] as f64,
+            share1: o[1] as f64,
+        });
 
         Ok(())
     }
@@ -144,11 +166,10 @@ pub mod arx_predict {
     pub fn create_user_position(
         ctx: Context<CreateUserPosition>,
         computation_offset: u64,
-        market_id: u32,
+        _market_id: u32,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_user_position(
-            market_id,
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
@@ -162,12 +183,14 @@ pub mod arx_predict {
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
+        amount: u64,
     ) -> Result<()> {
         ctx.accounts.vote(
             vote,
             vote_encryption_pubkey,
             vote_nonce,
             computation_offset,
+            amount
         )
     }
 
@@ -178,4 +201,21 @@ pub mod arx_predict {
     ) -> Result<()> {
         ctx.accounts.reveal_result(id, computation_offset)
     }
+
+    pub fn reveal_probs(
+        ctx: Context<RevealProbs>,
+        computation_offset: u64,
+        id: u32,
+    ) -> Result<()> {
+        ctx.accounts.reveal_probs(id, computation_offset)
+    }
+
+    pub fn send_payment(
+        ctx: Context<SendPayment>,
+        _id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.send_payment(amount)
+    }
+
 }

@@ -10,4 +10,6 @@ pub enum ErrorCode {
     InvalidNumOptions,
     #[msg("Cluster not set")]
     ClusterNotSet,
+    #[msg("Insufficient payment")]
+    InsufficientPayment,
 }

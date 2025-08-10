@@ -6,6 +6,7 @@ use crate::{
     COMP_DEF_OFFSET_REVEAL, 
     COMP_DEF_OFFSET_INIT_VOTE_STATS, 
     COMP_DEF_OFFSET_INIT_USER_POSITION, 
+    COMP_DEF_OFFSET_REVEAL_PROBS,
     MarketAccount,
     UserPosition
 };
@@ -61,6 +62,8 @@ pub struct VoteCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     #[account(mut)]
     pub market_acc: Account<'info, MarketAccount>,
+    #[account(mut)]
+    pub user_position_acc: Account<'info, UserPosition>,
 }
 
 #[callback_accounts("reveal_result", payer)]
@@ -71,6 +74,21 @@ pub struct RevealVotingResultCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("reveal_probs", payer)]
+#[derive(Accounts)]
+pub struct RevealProbsCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_PROBS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]

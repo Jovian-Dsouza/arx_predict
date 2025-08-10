@@ -1,29 +1,41 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
 import { ArxPredict } from "../target/types/arx_predict";
-import { randomBytes } from "crypto";
 import {
   awaitComputationFinalization,
-  getArciumEnv,
-  getCompDefAccOffset,
-  getArciumAccountBaseSeed,
-  getArciumProgAddress,
-  uploadCircuit,
-  buildFinalizeCompDefTx,
-  RescueCipher,
   deserializeLE,
-  getMXEAccAddress,
-  getMempoolAccAddress,
+  getArciumEnv,
   getCompDefAccAddress,
-  getExecutingPoolAccAddress,
-  x25519,
+  getCompDefAccOffset,
   getComputationAccAddress,
-  getMXEPublicKey,
+  getExecutingPoolAccAddress,
+  getMempoolAccAddress,
+  getMXEAccAddress,
+  RescueCipher,
+  x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+import { createTokenMint, getRequiredATA, readKpJson } from "../client/utils";
+import {
+  getMXEPublicKeyWithRetry,
+  getProbs,
+  createUserPosition,
+  createMarket,
+  vote,
+  sendPayment,
+  revealResult,
+} from "../client/arcium_helper";
+import {
+  initUserPositionCompDef,
+  initVoteCompDef,
+  initRevealResultCompDef,
+  initRevealProbsCompDef,
+  initVoteStatsCompDef,
+} from "../client/init_comp_defs";
+import { randomBytes } from "crypto";
 
 describe("Voting", () => {
   // Configure the client to use the local cluster.
@@ -50,6 +62,20 @@ describe("Voting", () => {
     const POLL_IDS = [420];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
+    // Create token mint and associated token account
+    const mint = await createTokenMint(
+      provider as anchor.AnchorProvider,
+      owner
+    );
+    const ata = await getRequiredATA(
+      provider as anchor.AnchorProvider,
+      owner,
+      mint,
+      1000 * 1e6
+    );
+    console.log("Token mint: ", mint.toString());
+    console.log("Owner ATA: ", ata.toString());
+
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId
@@ -57,92 +83,77 @@ describe("Voting", () => {
 
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
-    console.log("Initializing vote stats computation definition");
-    const initVoteStatsSig = await initVoteStatsCompDef(program, owner, false);
-    console.log(
-      "Vote stats computation definition initialized with signature",
-      initVoteStatsSig
+    console.log("Initializing computation definitions");
+    const initVoteStatsSig = await initVoteStatsCompDef(provider as anchor.AnchorProvider, program, owner, false);
+    const initUserPositionSig = await initUserPositionCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
     );
-
-    console.log("Initializing user position computation definition");
-    const initUserPositionSig = await initUserPositionCompDef(program, owner, false);
-    console.log(
-      "User position computation definition initialized with signature",
-      initUserPositionSig
+    const initVoteSig = await initVoteCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
     );
-
-    console.log("Initializing voting computation definition");
-    const initVoteSig = await initVoteCompDef(program, owner, false);
-    console.log(
-      "Vote computation definition initialized with signature",
-      initVoteSig
+    const initRRSig = await initRevealResultCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
     );
-
-    console.log("Initializing reveal result computation definition");
-    const initRRSig = await initRevealResultCompDef(program, owner, false);
-    console.log(
-      "Reveal result computation definition initialized with signature",
-      initRRSig
+    const initRPSig = await initRevealProbsCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
     );
+    console.log("Computation definitions initialized");
 
     const privateKey = x25519.utils.randomPrivateKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const options = [
-      "Yes",
-      "No",
-      "Maybe",
-      "Not Sure"
-    ];
+    const options = ["Yes", "No", "Maybe", "Not Sure"];
+    const question = `$SOL to 500?`;
     // Create multiple polls
     for (const POLL_ID of POLL_IDS) {
-      const pollNonce = randomBytes(16);
-
-      const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
-      const pollSig = await program.methods
-        .createMarket(
-          pollComputationOffset,
-          POLL_ID,
-          `Poll ${POLL_ID}: $SOL to 500?`,
-          options,
-          new anchor.BN(deserializeLE(pollNonce).toString())
-        )
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            pollComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
-          ),
-        })
-        .rpc();
-
-      console.log(`Poll ${POLL_ID} created with signature`, pollSig);
-
-      const finalizePollSig = await awaitComputationFinalization(
+      await createMarket(
         provider as anchor.AnchorProvider,
-        pollComputationOffset,
-        program.programId,
-        "confirmed"
+        program,
+        arciumEnv.arciumClusterPubkey,
+        POLL_ID,
+        question,
+        options,
+        mint
       );
-      console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
+    }
+
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(
+        provider as anchor.AnchorProvider,
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        awaitEvent("revealProbsEvent")
+      );
     }
 
     for (const POLL_ID of POLL_IDS) {
-       await createUserPosition(program, owner, POLL_ID);
+      await createUserPosition(
+        provider as anchor.AnchorProvider,
+        program,
+        arciumEnv.arciumClusterPubkey,
+        POLL_ID
+      );
     }
 
     // Cast votes for each poll with different outcomes
-    const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
+    const voteOutcomes = [1, 1, 0]; // Different outcomes for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const vote = BigInt(voteOutcomes[i]);
@@ -150,20 +161,23 @@ describe("Voting", () => {
 
       const nonce = randomBytes(16);
       const ciphertext = cipher.encrypt(plaintext, nonce);
+      const amount = 10 * 1e6;
+
+      await sendPayment(program, owner, ata, mint, POLL_ID, amount);
 
       const voteEventPromise = awaitEvent("voteEvent");
 
       console.log(`Voting for poll ${POLL_ID}`);
 
       const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
       const queueVoteSig = await program.methods
         .vote(
           voteComputationOffset,
           POLL_ID,
           Array.from(ciphertext[0]),
           Array.from(publicKey),
-          new anchor.BN(deserializeLE(nonce).toString())
+          new anchor.BN(deserializeLE(nonce).toString()),
+          new anchor.BN(amount)
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
@@ -195,55 +209,38 @@ describe("Voting", () => {
       console.log(
         `Vote casted for poll ${POLL_ID} at timestamp `,
         voteEvent.timestamp.toString(),
-        `with ${voteEvent.totalVotes} votes`
+        `with ${voteEvent.totalVotes} votes and amount ${voteEvent.amount}`
       );
-      console.log(
-        `LSM Probabilities for poll ${POLL_ID}:`,
-        `Option 0: ${(voteEvent.probabilities[0] * 100).toFixed(2)}%`,
-        `Option 1: ${(voteEvent.probabilities[1] * 100).toFixed(2)}%`
+    }
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(
+        provider as anchor.AnchorProvider,
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        awaitEvent("revealProbsEvent")
       );
+      console.log(`Probs for poll ${POLL_ID}:`, probs);
+      // expect(revealProbsEvent.share0).to.equal(0.5);
+      // expect(revealProbsEvent.share1).to.equal(0.5);
     }
 
     // Reveal results for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const expectedOutcome = voteOutcomes[i];
+      const expectedOutcome = voteOutcomes[i]; 
 
       const revealEventPromise = awaitEvent("revealResultEvent");
-
-      const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
-      const revealQueueSig = await program.methods
-        .revealResult(revealComputationOffset, POLL_ID)
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            revealComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
-          ),
-        })
-        .rpc({ commitment: "confirmed" });
-      console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
-
-      const revealFinalizeSig = await awaitComputationFinalization(
+      const revealEvent = await revealResult(
         provider as anchor.AnchorProvider,
-        revealComputationOffset,
-        program.programId,
-        "confirmed"
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        revealEventPromise
       );
-      console.log(
-        `Reveal finalize for poll ${POLL_ID} sig is `,
-        revealFinalizeSig
-      );
-
-      const revealEvent = await revealEventPromise;
+      
       console.log(
         `Decrypted winner for poll ${POLL_ID} is `,
         revealEvent.output
@@ -252,322 +249,5 @@ describe("Voting", () => {
     }
   });
 
-  async function initVoteStatsCompDef(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
-  ): Promise<string> {
-    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-      "ComputationDefinitionAccount"
-    );
-    const offset = getCompDefAccOffset("init_vote_stats");
-
-    const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
-    )[0];
-
-    console.log(
-      "Init vote stats computation definition pda is ",
-      compDefPDA.toBase58()
-    );
-
-    const sig = await program.methods
-      .initVoteStatsCompDef()
-      .accounts({
-        compDefAccount: compDefPDA,
-        payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-      })
-      .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
-    console.log("Init vote stats computation definition transaction", sig);
-
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
-
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "init_vote_stats",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
-    return sig;
-  }
-
-  async function initUserPositionCompDef(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
-  ): Promise<string> {
-    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-      "ComputationDefinitionAccount"
-    );
-    const offset = getCompDefAccOffset("init_user_position");
-
-    const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
-    )[0];
-
-    console.log(
-      "Init user position computation definition pda is ",
-      compDefPDA.toBase58()
-    );
-
-    const sig = await program.methods
-      .initUserPositionCompDef()
-      .accounts({
-        compDefAccount: compDefPDA,
-        payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-      })
-      .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
-    console.log("Init user position computation definition transaction", sig);
-
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
-
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "init_user_position",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
-    return sig;
-  }
-
-  async function initVoteCompDef(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
-  ): Promise<string> {
-    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-      "ComputationDefinitionAccount"
-    );
-    const offset = getCompDefAccOffset("vote");
-
-    const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
-    )[0];
-
-    console.log("Vote computation definition pda is ", compDefPDA.toBase58());
-
-    const sig = await program.methods
-      .initVoteCompDef()
-      .accounts({
-        compDefAccount: compDefPDA,
-        payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-      })
-      .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
-    console.log("Init vote computation definition transaction", sig);
-
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/vote.arcis");
-
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "vote",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
-    return sig;
-  }
-
-  async function initRevealResultCompDef(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
-  ): Promise<string> {
-    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-      "ComputationDefinitionAccount"
-    );
-    const offset = getCompDefAccOffset("reveal_result");
-
-    const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
-    )[0];
-
-    console.log(
-      "Reveal result computation definition pda is ",
-      compDefPDA.toBase58()
-    );
-
-    const sig = await program.methods
-      .initRevealResultCompDef()
-      .accounts({
-        compDefAccount: compDefPDA,
-        payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-      })
-      .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
-    console.log("Init reveal result computation definition transaction", sig);
-
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/reveal_result.arcis");
-
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "reveal_result",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
-    return sig;
-  }
-
-  async function createUserPosition(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    marketId: number
-  ) {
-    const userPositionNonce = randomBytes(16);
-
-      const userPositionComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
-      const userPositionSig = await program.methods
-        .createUserPosition(
-          userPositionComputationOffset,
-          marketId,
-          new anchor.BN(deserializeLE(userPositionNonce).toString())
-        )
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            userPositionComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("init_user_position")).readUInt32LE()
-          ),
-        })
-        .rpc();
-
-      console.log(`User position created with signature`, userPositionSig);
-
-      const finalizePollSig = await awaitComputationFinalization(
-        provider as anchor.AnchorProvider,
-        userPositionComputationOffset,
-        program.programId,
-        "confirmed"
-      );
-      console.log(`Finalize user position sig is `, finalizePollSig);
-  }
+  
 });
-
-async function getMXEPublicKeyWithRetry(
-  provider: anchor.AnchorProvider,
-  programId: PublicKey,
-  maxRetries: number = 10,
-  retryDelayMs: number = 500
-): Promise<Uint8Array> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const mxePublicKey = await getMXEPublicKey(provider, programId);
-      if (mxePublicKey) {
-        return mxePublicKey;
-      }
-    } catch (error) {
-      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
-    }
-
-    if (attempt < maxRetries) {
-      console.log(
-        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-    }
-  }
-
-  throw new Error(
-    `Failed to fetch MXE public key after ${maxRetries} attempts`
-  );
-}
-
-function readKpJson(path: string): anchor.web3.Keypair {
-  const file = fs.readFileSync(path);
-  return anchor.web3.Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(file.toString()))
-  );
-}

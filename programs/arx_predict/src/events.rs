@@ -5,10 +5,16 @@ use crate::MAX_OPTIONS;
 pub struct VoteEvent {
     pub timestamp: i64,
     pub total_votes: u64,
-    pub probabilities: [f64; MAX_OPTIONS],
+    pub amount: u64,
 }
 
 #[event]
 pub struct RevealResultEvent {
     pub output: u8,
+}
+
+#[event]
+pub struct RevealProbsEvent {
+    pub share0: f64,
+    pub share1: f64,
 }

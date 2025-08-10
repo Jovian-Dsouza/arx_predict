@@ -3,6 +3,10 @@ use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_VOTE_STATS, MAX_OPTIONS};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{Token, Mint, TokenAccount}
+};
 
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
@@ -52,6 +56,8 @@ pub struct CreateMarket<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     #[account(
         init,
         payer = payer,
@@ -60,6 +66,21 @@ pub struct CreateMarket<'info> {
         bump,
     )]
     pub market_acc: Account<'info, MarketAccount>,
+
+    #[account(
+        init,
+        seeds = [b"vault", id.to_le_bytes().as_ref()],
+        bump,
+        payer=payer,
+        token::mint = mint,
+        token::authority = vault
+    )]
+    pub vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mint::token_program = token_program
+    )]
+    pub mint: Account<'info, Mint>,
 }
 
 impl<'info> CreateMarket<'info> {
@@ -79,7 +100,7 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.nonce = nonce;
         self.market_acc.options = options;
         self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
-        self.market_acc.probs = [0.5; MAX_OPTIONS];
+        self.market_acc.probs = [[0; 32]; MAX_OPTIONS];
 
         let args = vec![Argument::PlaintextU128(nonce)];
 

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_VOTE, MAX_OPTIONS};
+use crate::{constants::{MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
@@ -63,26 +63,48 @@ pub struct Vote<'info> {
         has_one = authority
     )]
     pub market_acc: Account<'info, MarketAccount>,
+
+    #[account(
+        mut,
+        seeds = [b"user_position", _id.to_le_bytes().as_ref(), payer.key().as_ref()],
+        bump
+    )]
+    pub user_position_acc: Account<'info, UserPosition>,
 }
 
 impl<'info> Vote<'info> {
     pub fn vote(
-        &self,
+        &mut self,
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
         computation_offset: u64,
+        amount: u64,
     ) -> Result<()> {
+
+        if self.user_position_acc.current_payment < amount {
+            return Err(ErrorCode::InsufficientPayment.into());
+        }
+
+        self.user_position_acc.current_payment -= amount;
+
         let args = vec![
             Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
+            // Argument::PlaintextU128(vote_nonce),
+            Argument::PlaintextU64(amount),
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),
-                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
-                8 + 1,
-                32 * MAX_OPTIONS as u32, // MAX_OPTIONS vote counters, each stored as 32-byte ciphertext
+                MARKET_ACCOUNT_VOTE_STATS_OFFSET,
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH,
+            ),
+            Argument::PlaintextU128(self.user_position_acc.nonce),
+            Argument::Account(
+                self.user_position_acc.key(),
+                USER_POSITION_SHARES_OFFSET,
+                USER_POSITION_SHARES_LENGTH,
             ),
         ];
 
@@ -92,6 +114,9 @@ impl<'info> Vote<'info> {
             args,
             vec![CallbackAccount {
                 pubkey: self.market_acc.key(),
+                is_writable: true,
+            }, CallbackAccount {
+                pubkey: self.user_position_acc.key(),
                 is_writable: true,
             }],
             None,

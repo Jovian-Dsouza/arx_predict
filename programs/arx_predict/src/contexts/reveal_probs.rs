@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_PROB_OFFSET, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
-#[queue_computation_accounts("reveal_result", payer)]
+#[queue_computation_accounts("reveal_probs", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, id: u32)]
-pub struct RevealVotingResult<'info> {
+pub struct RevealProbs<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -32,7 +32,7 @@ pub struct RevealVotingResult<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_PROBS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -58,8 +58,8 @@ pub struct RevealVotingResult<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-impl<'info> RevealVotingResult<'info> {
-    pub fn reveal_result(
+impl<'info> RevealProbs<'info> {
+    pub fn reveal_probs(
         &self,
         id: u32,
         computation_offset: u64,
@@ -69,14 +69,14 @@ impl<'info> RevealVotingResult<'info> {
             ErrorCode::InvalidAuthority
         );
 
-        msg!("Revealing voting result for poll with id {}", id);
+        msg!("Revealing probs for poll with id {}", id);
 
         let args = vec![
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),
                 MARKET_ACCOUNT_VOTE_STATS_OFFSET,
-                MARKET_ACCOUNT_VOTE_STATS_LENGTH
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH,
             ),
         ];
 
