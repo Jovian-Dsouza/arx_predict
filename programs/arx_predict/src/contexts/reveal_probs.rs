@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_PROB_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_PROB_OFFSET, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("reveal_probs", payer)]
 #[derive(Accounts)]
@@ -75,8 +75,8 @@ impl<'info> RevealProbs<'info> {
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),
-                MARKET_ACCOUNT_PROB_OFFSET,
-                MARKET_ACCOUNT_PROB_LENGTH
+                MARKET_ACCOUNT_VOTE_STATS_OFFSET,
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH,
             ),
         ];
 

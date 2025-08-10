@@ -201,12 +201,21 @@ describe("Voting", () => {
       console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
     }
 
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(provider as anchor.AnchorProvider, program, POLL_ID, arciumEnv.arciumClusterPubkey, awaitEvent("revealProbsEvent"));
+      console.log(`Probs for poll ${POLL_ID}:`, probs);
+      // expect(revealProbsEvent.share0).to.equal(0.5);
+      // expect(revealProbsEvent.share1).to.equal(0.5);
+    }
+
     for (const POLL_ID of POLL_IDS) {
        await createUserPosition(program, owner, POLL_ID);
     }
 
     // Cast votes for each poll with different outcomes
-    const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
+    const voteOutcomes = [1, 1, 0]; // Different outcomes for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const vote = BigInt(voteOutcomes[i]);
@@ -264,55 +273,12 @@ describe("Voting", () => {
         voteEvent.timestamp.toString(),
         `with ${voteEvent.totalVotes} votes`
       );
-      console.log(
-        `LSM Probabilities for poll ${POLL_ID}:`,
-        // `Option 0: ${(voteEvent.probabilities[0] * 100).toFixed(2)}%`,
-        // `Option 1: ${(voteEvent.probabilities[1] * 100).toFixed(2)}%`
-      );
     }
     // Reveal probs for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const expectedOutcome = voteOutcomes[i];
-
-      const revealProbsPromise = awaitEvent("revealProbsEvent");
-      const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-      const revealQueueSig = await program.methods
-        .revealProbs(revealComputationOffset, POLL_ID)
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            revealComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
-          ),
-        })
-        .rpc({ commitment: "confirmed" });
-      console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
-
-      const revealFinalizeSig = await awaitComputationFinalization(
-        provider as anchor.AnchorProvider,
-        revealComputationOffset,
-        program.programId,
-        "confirmed"
-      );
-      console.log(
-        `Reveal finalize for poll ${POLL_ID} sig is `,
-        revealFinalizeSig
-      );
-
-      const revealProbsEvent = await revealProbsPromise;
-      console.log(
-        `Decrypted probs for poll ${POLL_ID} is `,
-        revealProbsEvent.share0,
-        revealProbsEvent.share1
-      );
+      const probs = await getProbs(provider as anchor.AnchorProvider, program, POLL_ID, arciumEnv.arciumClusterPubkey, awaitEvent("revealProbsEvent"));
+      console.log(`Probs for poll ${POLL_ID}:`, probs);
       // expect(revealProbsEvent.share0).to.equal(0.5);
       // expect(revealProbsEvent.share1).to.equal(0.5);
     }
@@ -761,5 +727,51 @@ function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
   return anchor.web3.Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(file.toString()))
+  );
+}
+
+async function getProbs(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>, 
+  marketId: number,
+  arciumClusterPubkey: PublicKey,
+  revealProbsEventPromise: any
+) {
+  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const revealQueueSig = await program.methods
+    .revealProbs(revealComputationOffset, marketId)
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        revealComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
+      ),
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
+
+  const revealFinalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    revealComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(
+    `Reveal finalize for poll ${marketId} sig is `,
+    revealFinalizeSig
+  );
+
+  const revealProbsEvent = await revealProbsEventPromise;
+  console.log(
+    `Decrypted probs for poll ${marketId} is `,
+    revealProbsEvent.share0,
+    revealProbsEvent.share1
   );
 }

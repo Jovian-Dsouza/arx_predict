@@ -96,9 +96,9 @@ pub mod arx_predict {
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
         let total_votes = o.field_2;
-
        
 
+        
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
@@ -136,8 +136,8 @@ pub mod arx_predict {
         };
 
         emit!(RevealProbsEvent { 
-            share0: o.field_0,
-            share1: o.field_1,
+            share0: o[0] as f64,
+            share1: o[1] as f64,
         });
 
         Ok(())
