@@ -51,6 +51,49 @@ export async function getMXEPublicKeyWithRetry(
   );
 }
 
+export async function createUserPosition(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  marketId: number
+) {
+  const userPositionNonce = randomBytes(16);
+
+  const userPositionComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+  const userPositionSig = await program.methods
+    .createUserPosition(
+      userPositionComputationOffset,
+      marketId,
+      new anchor.BN(deserializeLE(userPositionNonce).toString())
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        userPositionComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("init_user_position")).readUInt32LE()
+      ),
+    })
+    .rpc();
+
+  console.log(`User position created with signature`, userPositionSig);
+
+  const finalizePollSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    userPositionComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize user position sig is `, finalizePollSig);
+}
+
 export async function getProbs(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,

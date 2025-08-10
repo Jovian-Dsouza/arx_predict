@@ -32,7 +32,8 @@ import {
 } from "../client/utils"
 import {
   getMXEPublicKeyWithRetry,
-  getProbs
+  getProbs,
+  createUserPosition
 } from "../client/arcium_helper"
 import {
   initUserPositionCompDef,
@@ -152,7 +153,7 @@ describe("Voting", () => {
     }
 
     for (const POLL_ID of POLL_IDS) {
-       await createUserPosition(program, owner, POLL_ID);
+       await createUserPosition(provider as anchor.AnchorProvider, program, arciumEnv.arciumClusterPubkey, POLL_ID);
     }
 
     // Cast votes for each poll with different outcomes
@@ -354,46 +355,6 @@ describe("Voting", () => {
   
   
 
-  async function createUserPosition(
-    program: Program<ArxPredict>,
-    owner: anchor.web3.Keypair,
-    marketId: number
-  ) {
-    const userPositionNonce = randomBytes(16);
-
-      const userPositionComputationOffset = new anchor.BN(randomBytes(8), "hex");
-
-      const userPositionSig = await program.methods
-        .createUserPosition(
-          userPositionComputationOffset,
-          marketId,
-          new anchor.BN(deserializeLE(userPositionNonce).toString())
-        )
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            userPositionComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("init_user_position")).readUInt32LE()
-          ),
-        })
-        .rpc();
-
-      console.log(`User position created with signature`, userPositionSig);
-
-      const finalizePollSig = await awaitComputationFinalization(
-        provider as anchor.AnchorProvider,
-        userPositionComputationOffset,
-        program.programId,
-        "confirmed"
-      );
-      console.log(`Finalize user position sig is `, finalizePollSig);
-  }
+  
 });
 
