@@ -17,6 +17,7 @@ pub struct MarketAccount {
     pub options: [String; MAX_OPTIONS],
     pub updated_at: u64,
     pub expiry_at: u64,
+    pub winning_outcome: u8,
 }
 
 #[account]

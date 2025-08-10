@@ -63,7 +63,8 @@ mod circuits {
     ) -> (
         Enc<Mxe, MarketStats>, 
         Enc<Mxe, UserPosition>, 
-        u64, u64
+        u64, 
+        u64
     ) {
         let user_vote = vote_ctxt.to_arcis();
         let mut market_stats = market_stats_ctxt.to_arcis();
