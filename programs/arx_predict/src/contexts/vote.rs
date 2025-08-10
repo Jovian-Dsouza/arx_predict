@@ -82,11 +82,11 @@ impl<'info> Vote<'info> {
         amount: u64,
     ) -> Result<()> {
 
-        if self.user_position_acc.current_payment < amount {
+        if self.user_position_acc.balance < amount {
             return Err(ErrorCode::InsufficientPayment.into());
         }
 
-        self.user_position_acc.current_payment -= amount;
+        self.user_position_acc.balance -= amount;
 
         let args = vec![
             Argument::ArcisPubkey(vote_encryption_pubkey),

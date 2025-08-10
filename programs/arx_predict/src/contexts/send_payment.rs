@@ -66,7 +66,7 @@ impl<'info> SendPayment<'info> {
             self.mint.decimals
         )?;
 
-        self.user_position_acc.current_payment += amount;
+        self.user_position_acc.balance += amount;
         Ok(())
     }
 } 

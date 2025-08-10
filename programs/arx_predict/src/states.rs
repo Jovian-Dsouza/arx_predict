@@ -25,5 +25,5 @@ pub struct UserPosition {
     pub bump: u8,
     pub nonce: u128,
     pub shares: [[u8; 32]; MAX_OPTIONS],
-    pub current_payment: u64,    
+    pub balance: u64,    
 }

@@ -72,7 +72,7 @@ impl<'info> CreateUserPosition<'info> {
         self.user_position_acc.bump = bump;
         self.user_position_acc.nonce = nonce;
         self.user_position_acc.shares = [[0; 32]; MAX_OPTIONS];
-        self.user_position_acc.current_payment = 0;
+        self.user_position_acc.balance = 0;
         let args = vec![Argument::PlaintextU128(nonce)];
 
         queue_computation(
