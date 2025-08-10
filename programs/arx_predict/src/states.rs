@@ -6,16 +6,16 @@ use crate::constants::*;
 pub struct MarketAccount {
     pub bump: u8,
     pub nonce: u128,
-    // Up to MAX_OPTIONS options, each with a ciphertext tally (32 bytes each)
     pub vote_state: [[u8; 32]; MAX_OPTIONS],
     pub probs: [[u8; 32]; MAX_OPTIONS],
+    pub liquidity_parameter: u64,
     pub id: u32,
     pub authority: Pubkey,
     #[max_len(MAX_QUESTION_LENGTH)]
     pub question: String,
     #[max_len(MAX_OPTION_LENGTH)]
     pub options: [String; MAX_OPTIONS],
-    // pub created_at: u64,
+    pub updated_at: u64,
 }
 
 #[account]
