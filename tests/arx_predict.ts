@@ -24,53 +24,16 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
 import {
-  createMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-} from "@solana/spl-token";
-
-export async function createTokenMint(
-  provider: anchor.AnchorProvider,
-  wallet: anchor.web3.Keypair
-) {
-  const mint = await createMint(
-    provider.connection,
-    wallet, //payer
-    wallet.publicKey, //mint authoritu
-    null, //freeze authority
-    6
-  );
-  return mint;
-}
-
-export async function getRequiredATA(
-  provider: anchor.AnchorProvider,
-  wallet: anchor.web3.Keypair,
-  mint: anchor.web3.PublicKey,
-  mintAmount: number = 0
-) {
-  const ata = (
-    await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      wallet,
-      mint,
-      wallet.publicKey,
-      false
-    )
-  ).address;
-  if (mintAmount > 0) {
-    await mintTo(
-      provider.connection,
-      wallet, //fee payer
-      mint,
-      ata,
-      wallet, //mint authority
-      mintAmount
-    );
-  }
-  return ata;
-}
+  createTokenMint,
+  getRequiredATA,
+  readKpJson,
+} from "../client/utils"
+import {
+  getMXEPublicKeyWithRetry,
+  getProbs
+} from "../client/arcium_helper"
 
 
 describe("Voting", () => {
@@ -694,84 +657,3 @@ describe("Voting", () => {
   }
 });
 
-async function getMXEPublicKeyWithRetry(
-  provider: anchor.AnchorProvider,
-  programId: PublicKey,
-  maxRetries: number = 10,
-  retryDelayMs: number = 500
-): Promise<Uint8Array> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const mxePublicKey = await getMXEPublicKey(provider, programId);
-      if (mxePublicKey) {
-        return mxePublicKey;
-      }
-    } catch (error) {
-      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
-    }
-
-    if (attempt < maxRetries) {
-      console.log(
-        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-    }
-  }
-
-  throw new Error(
-    `Failed to fetch MXE public key after ${maxRetries} attempts`
-  );
-}
-
-function readKpJson(path: string): anchor.web3.Keypair {
-  const file = fs.readFileSync(path);
-  return anchor.web3.Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(file.toString()))
-  );
-}
-
-async function getProbs(
-  provider: anchor.AnchorProvider,
-  program: Program<ArxPredict>, 
-  marketId: number,
-  arciumClusterPubkey: PublicKey,
-  revealProbsEventPromise: any
-) {
-  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-  const revealQueueSig = await program.methods
-    .revealProbs(revealComputationOffset, marketId)
-    .accountsPartial({
-      computationAccount: getComputationAccAddress(
-        program.programId,
-        revealComputationOffset
-      ),
-      clusterAccount: arciumClusterPubkey,
-      mxeAccount: getMXEAccAddress(program.programId),
-      mempoolAccount: getMempoolAccAddress(program.programId),
-      executingPool: getExecutingPoolAccAddress(program.programId),
-      compDefAccount: getCompDefAccAddress(
-        program.programId,
-        Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
-      ),
-    })
-    .rpc({ commitment: "confirmed" });
-  console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
-
-  const revealFinalizeSig = await awaitComputationFinalization(
-    provider as anchor.AnchorProvider,
-    revealComputationOffset,
-    program.programId,
-    "confirmed"
-  );
-  console.log(
-    `Reveal finalize for poll ${marketId} sig is `,
-    revealFinalizeSig
-  );
-
-  const revealProbsEvent = await revealProbsEventPromise;
-  console.log(
-    `Decrypted probs for poll ${marketId} is `,
-    revealProbsEvent.share0,
-    revealProbsEvent.share1
-  );
-}
