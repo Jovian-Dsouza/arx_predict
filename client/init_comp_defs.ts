@@ -23,6 +23,68 @@ import {
   getMXEPublicKey,
 } from "@arcium-hq/client";
 
+export async function initVoteStatsCompDef(
+    provider: anchor.AnchorProvider,
+    program: Program<ArxPredict>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("init_vote_stats");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log(
+      "Init vote stats computation definition pda is ",
+      compDefPDA.toBase58()
+    );
+
+    const sig = await program.methods
+      .initVoteStatsCompDef()
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+      })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init vote stats computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "init_vote_stats",
+        program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        provider as anchor.AnchorProvider,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
+
 export async function initUserPositionCompDef(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
