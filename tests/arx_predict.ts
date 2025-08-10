@@ -209,7 +209,7 @@ describe("Voting", () => {
       console.log(
         `Vote casted for poll ${POLL_ID} at timestamp `,
         voteEvent.timestamp.toString(),
-        `with ${voteEvent.totalVotes} votes`
+        `with ${voteEvent.totalVotes} votes and amount ${voteEvent.amount}`
       );
     }
     // Reveal probs for each poll

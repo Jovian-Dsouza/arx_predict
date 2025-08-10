@@ -57,12 +57,13 @@ mod circuits {
     #[instruction]
     pub fn vote(
         vote_ctxt: Enc<Shared, UserVote>,
+        amount: u64,
         market_stats_ctxt: Enc<Mxe, MarketStats>,
         user_position_ctxt: Enc<Mxe, UserPosition>,
     ) -> (
         Enc<Mxe, MarketStats>, 
         Enc<Mxe, UserPosition>, 
-        u64
+        u64, u64
     ) {
         let user_vote = vote_ctxt.to_arcis();
         let mut market_stats = market_stats_ctxt.to_arcis();
@@ -96,6 +97,7 @@ mod circuits {
             market_stats_ctxt.owner.from_arcis(market_stats), 
             user_position_ctxt.owner.from_arcis(user_position),
             total_votes.reveal(),
+            amount
         )
     }
 

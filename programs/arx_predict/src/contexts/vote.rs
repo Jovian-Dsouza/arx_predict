@@ -92,6 +92,8 @@ impl<'info> Vote<'info> {
             Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
+            // Argument::PlaintextU128(vote_nonce),
+            Argument::PlaintextU64(amount),
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),

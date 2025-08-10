@@ -96,6 +96,7 @@ pub mod arx_predict {
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
         let total_votes = o.field_2;
+        let amount = o.field_3;
        
 
         
@@ -105,6 +106,7 @@ pub mod arx_predict {
         emit!(VoteEvent {
             timestamp: current_timestamp,
             total_votes,
+            amount,
         });
 
         Ok(())
