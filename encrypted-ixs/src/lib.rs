@@ -10,8 +10,8 @@ mod circuits {
     }
 
     pub struct Probs {
-        share0: f64,
-        share1: f64,
+        option0: f64,
+        option1: f64,
     }
 
     pub struct MarketStats {
@@ -20,8 +20,8 @@ mod circuits {
     }
 
     pub struct UserPosition {
-        share0: u64,
-        share1: u64,
+        option0: u64,
+        option1: u64,
     }
 
     pub struct UserVote {
@@ -35,8 +35,8 @@ mod circuits {
             option1: 0,
         };
         let probs = Probs {
-            share0: 0.5,
-            share1: 0.5,
+            option0: 0.5,
+            option1: 0.5,
         };
         let market_stats = MarketStats {
             vote_stats,
@@ -48,8 +48,8 @@ mod circuits {
     #[instruction]
     pub fn init_user_position(mxe: Mxe) -> Enc<Mxe, UserPosition> {
         let user_position = UserPosition { 
-            share0: 0,
-            share1: 0,
+            option0: 0,
+            option1: 0,
         };
         mxe.from_arcis(user_position)
     }
@@ -89,8 +89,8 @@ mod circuits {
             let sum_exp = exp0 + exp1;
             
 
-            market_stats.probs.share0 = exp0 / sum_exp;
-            market_stats.probs.share1 = exp1 / sum_exp;
+            market_stats.probs.option0 = exp0 / sum_exp;
+            market_stats.probs.option1 = exp1 / sum_exp;
         } 
         
         (
@@ -117,7 +117,7 @@ mod circuits {
     #[instruction]
     pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
         let probs = probs_ctxt.to_arcis();
-        let probabilities = [probs.probs.share0.reveal(), probs.probs.share1.reveal()];
+        let probabilities = [probs.probs.option0.reveal(), probs.probs.option1.reveal()];
         probabilities
     }
 
