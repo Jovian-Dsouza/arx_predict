@@ -89,6 +89,7 @@ impl<'info> CreateMarket<'info> {
         id: u32,
         question: String,
         options: [String; MAX_OPTIONS],
+        liquidity_parameter: u64,
         nonce: u128,
         computation_offset: u64,
         bump: u8,
@@ -102,6 +103,7 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
         self.market_acc.probs = [[0; 32]; MAX_OPTIONS];
         self.market_acc.cost = [0; 32];
+        self.market_acc.liquidity_parameter = liquidity_parameter;
 
         //TODO: Market maker pays b*ln(MAX_OPTIONS)
 

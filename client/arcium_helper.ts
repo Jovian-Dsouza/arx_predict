@@ -148,6 +148,7 @@ export async function createMarket(
   marketId: number,
   question: string,
   options: string[],
+  liquidity_parameter: number,
   mint: PublicKey
 ) {
   const nonce = randomBytes(16);
@@ -158,6 +159,7 @@ export async function createMarket(
       marketId,
       question,
       options,
+      new anchor.BN(liquidity_parameter),
       new anchor.BN(deserializeLE(nonce).toString())
     )
     .accountsPartial({

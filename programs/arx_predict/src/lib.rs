@@ -137,17 +137,20 @@ pub mod arx_predict {
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-        // let total_votes = o.field_2;
-        let amount = o.field_2;
-       
+        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
 
-        
+        if ctx.accounts.user_position_acc.balance < amount {
+            return Err(ErrorCode::InsufficientPayment.into());
+        }
+        ctx.accounts.user_position_acc.balance -= amount;
+       
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
         emit!(BuySharesEvent {
             timestamp: current_timestamp,
-            amount,
+            amount: o.field_2,
+            amount_u64: amount,
         });
 
         Ok(())
@@ -192,12 +195,14 @@ pub mod arx_predict {
         id: u32,
         question: String,
         options: [String; MAX_OPTIONS],
+        liquidity_parameter: u64,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_market(
             id,
             question,
             options,
+            liquidity_parameter,
             nonce,
             computation_offset,
             ctx.bumps.market_acc,
@@ -242,14 +247,14 @@ pub mod arx_predict {
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
-        amount: u64,
+        shares: u64,
     ) -> Result<()> {
         ctx.accounts.buy_shares(
             vote,
             vote_encryption_pubkey,
             vote_nonce,
             computation_offset,
-            amount
+            shares
         )
     }
 

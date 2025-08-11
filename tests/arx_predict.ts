@@ -135,6 +135,7 @@ describe("Voting", () => {
         POLL_ID,
         question,
         options,
+        10, // liquidity parameter
         mint
       );
     }
@@ -226,20 +227,75 @@ describe("Voting", () => {
     //   );
     // }
 
+
+
     for (const POLL_ID of POLL_IDS) {
-      await buyShares(
+      const vote = 0
+      const shares = 2;
+      console.log(`Buying shares for poll ${POLL_ID}`);
+      const buySharesEventPromise = awaitEvent("buySharesEvent")
+      const nonce = randomBytes(16);
+      const voteBigInt = BigInt(vote);
+      const plaintext = [voteBigInt];
+      const ciphertext = cipher.encrypt(plaintext, nonce);
+      const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+      const queueBuySharesSig = await program.methods
+        .buyShares(
+          voteComputationOffset,
+          POLL_ID,
+          Array.from(ciphertext[0]),
+          Array.from(publicKey),
+          new anchor.BN(deserializeLE(nonce).toString()),
+          new anchor.BN(shares)
+        )
+        .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            voteComputationOffset
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("buy_shares")).readUInt32LE()
+          ),
+          authority: owner.publicKey,
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log(`Queue buy shares for poll ${POLL_ID} sig is `, queueBuySharesSig);
+
+      const finalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        program,
-        arciumEnv.arciumClusterPubkey,
-        cipher,
-        publicKey,
-        owner.publicKey,
-        POLL_ID,
-        0,
-        10*1e6,
-        awaitEvent("buySharesEvent")
+        voteComputationOffset,
+        program.programId,
+        "confirmed"
+      );
+      console.log(`Finalize buy shares for poll ${POLL_ID} sig is `, finalizeSig);
+
+      const buySharesEvent = await buySharesEventPromise;
+      console.log(
+        `Buy shares for poll ${POLL_ID} at timestamp `,
+        buySharesEvent.timestamp.toString(),
+        `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`
       );
     }
+
+    // for (const POLL_ID of POLL_IDS) {
+    //   await buyShares(
+    //     provider as anchor.AnchorProvider,
+    //     program,
+    //     arciumEnv.arciumClusterPubkey,
+    //     cipher,
+    //     publicKey,
+    //     owner.publicKey,
+    //     POLL_ID,
+    //     0,
+    //     10*1e6,
+    //     awaitEvent("buySharesEvent")
+    //   );
+    // }
     // Reveal probs for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];

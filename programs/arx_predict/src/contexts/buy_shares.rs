@@ -79,21 +79,13 @@ impl<'info> BuyShares<'info> {
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
         computation_offset: u64,
-        amount: u64,
+        shares: u64,
     ) -> Result<()> {
-
-        if self.user_position_acc.balance < amount {
-            return Err(ErrorCode::InsufficientPayment.into());
-        }
-
-        self.user_position_acc.balance -= amount;
-
         let args = vec![
             Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
-            // Argument::PlaintextU128(vote_nonce),
-            Argument::PlaintextU64(amount),
+            Argument::PlaintextU64(shares),
             Argument::PlaintextU64(self.market_acc.liquidity_parameter),
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
