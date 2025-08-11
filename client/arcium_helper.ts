@@ -322,7 +322,7 @@ export async function buyShares(
   owner: PublicKey,
   marketId: number,
   vote: number,
-  amount: number,
+  shares: number,
   buySharesEventPromise: any
 ) {
   console.log(`Buying shares for poll ${marketId}`);
@@ -338,7 +338,7 @@ export async function buyShares(
       Array.from(ciphertext[0]),
       Array.from(mpcPublicKey),
       new anchor.BN(deserializeLE(nonce).toString()),
-      new anchor.BN(amount)
+      new anchor.BN(shares)
     )
     .accountsPartial({
       computationAccount: getComputationAccAddress(
@@ -370,6 +370,6 @@ export async function buyShares(
   console.log(
     `Buy shares for poll ${marketId} at timestamp `,
     buySharesEvent.timestamp.toString(),
-    `with ${buySharesEvent.amount} shares`
+    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`
   );
 }
