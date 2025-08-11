@@ -2,9 +2,9 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_BUY_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
 
-#[queue_computation_accounts("vote", payer)]
+#[queue_computation_accounts("buy_shares", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, _id: u32)]
 pub struct BuyShares<'info> {
@@ -33,7 +33,7 @@ pub struct BuyShares<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_BUY_SHARES)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -72,7 +72,7 @@ pub struct BuyShares<'info> {
     pub user_position_acc: Account<'info, UserPosition>,
 }
 
-    impl<'info> BuyShares<'info> {
+impl<'info> BuyShares<'info> {
     pub fn buy_shares(
         &mut self,
         vote: [u8; 32],
@@ -94,6 +94,7 @@ pub struct BuyShares<'info> {
             Argument::EncryptedBool(vote),
             // Argument::PlaintextU128(vote_nonce),
             Argument::PlaintextU64(amount),
+            Argument::PlaintextU64(self.market_acc.liquidity_parameter),
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),

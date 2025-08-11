@@ -27,6 +27,7 @@ import {
   vote,
   sendPayment,
   revealResult,
+  buyShares,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -159,64 +160,84 @@ describe("Voting", () => {
       );
     }
 
+    // Send payments for each poll
+    for (const POLL_ID of POLL_IDS) {
+      await sendPayment(program, owner, ata, mint, POLL_ID, 100 * 1e6);
+    }
+
     // Cast votes for each poll with different outcomes
-    const voteOutcomes = [1, 1, 0]; // Different outcomes for each poll
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      const vote = BigInt(voteOutcomes[i]);
-      const plaintext = [vote];
+    const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
+    // for (let i = 0; i < POLL_IDS.length; i++) {
+    //   const POLL_ID = POLL_IDS[i];
+    //   const vote = BigInt(voteOutcomes[i]);
+    //   const plaintext = [vote];
 
-      const nonce = randomBytes(16);
-      const ciphertext = cipher.encrypt(plaintext, nonce);
-      const amount = 10 * 1e6;
+    //   const nonce = randomBytes(16);
+    //   const ciphertext = cipher.encrypt(plaintext, nonce);
+    //   const amount = 10 * 1e6;
 
-      await sendPayment(program, owner, ata, mint, POLL_ID, amount);
+    //   await sendPayment(program, owner, ata, mint, POLL_ID, amount);
 
-      const voteEventPromise = awaitEvent("voteEvent");
+    //   const voteEventPromise = awaitEvent("voteEvent");
 
-      console.log(`Voting for poll ${POLL_ID}`);
+    //   console.log(`Voting for poll ${POLL_ID}`);
 
-      const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
-      const queueVoteSig = await program.methods
-        .vote(
-          voteComputationOffset,
-          POLL_ID,
-          Array.from(ciphertext[0]),
-          Array.from(publicKey),
-          new anchor.BN(deserializeLE(nonce).toString()),
-          new anchor.BN(amount)
-        )
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            voteComputationOffset
-          ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
-          ),
-          authority: owner.publicKey,
-        })
-        .rpc({ commitment: "confirmed" });
-      console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
+    //   const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+    //   const queueVoteSig = await program.methods
+    //     .vote(
+    //       voteComputationOffset,
+    //       POLL_ID,
+    //       Array.from(ciphertext[0]),
+    //       Array.from(publicKey),
+    //       new anchor.BN(deserializeLE(nonce).toString()),
+    //       new anchor.BN(amount)
+    //     )
+    //     .accountsPartial({
+    //       computationAccount: getComputationAccAddress(
+    //         program.programId,
+    //         voteComputationOffset
+    //       ),
+    //       clusterAccount: arciumEnv.arciumClusterPubkey,
+    //       mxeAccount: getMXEAccAddress(program.programId),
+    //       mempoolAccount: getMempoolAccAddress(program.programId),
+    //       executingPool: getExecutingPoolAccAddress(program.programId),
+    //       compDefAccount: getCompDefAccAddress(
+    //         program.programId,
+    //         Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
+    //       ),
+    //       authority: owner.publicKey,
+    //     })
+    //     .rpc({ commitment: "confirmed" });
+    //   console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
 
-      const finalizeSig = await awaitComputationFinalization(
+    //   const finalizeSig = await awaitComputationFinalization(
+    //     provider as anchor.AnchorProvider,
+    //     voteComputationOffset,
+    //     program.programId,
+    //     "confirmed"
+    //   );
+    //   console.log(`Finalize vote for poll ${POLL_ID} sig is `, finalizeSig);
+
+    //   const voteEvent = await voteEventPromise;
+    //   console.log(
+    //     `Vote casted for poll ${POLL_ID} at timestamp `,
+    //     voteEvent.timestamp.toString(),
+    //     `with ${voteEvent.totalVotes} votes and amount ${voteEvent.amount}`
+    //   );
+    // }
+
+    for (const POLL_ID of POLL_IDS) {
+      await buyShares(
         provider as anchor.AnchorProvider,
-        voteComputationOffset,
-        program.programId,
-        "confirmed"
-      );
-      console.log(`Finalize vote for poll ${POLL_ID} sig is `, finalizeSig);
-
-      const voteEvent = await voteEventPromise;
-      console.log(
-        `Vote casted for poll ${POLL_ID} at timestamp `,
-        voteEvent.timestamp.toString(),
-        `with ${voteEvent.totalVotes} votes and amount ${voteEvent.amount}`
+        program,
+        arciumEnv.arciumClusterPubkey,
+        cipher,
+        publicKey,
+        owner.publicKey,
+        POLL_ID,
+        0,
+        10*1e6,
+        awaitEvent("buySharesEvent")
       );
     }
     // Reveal probs for each poll

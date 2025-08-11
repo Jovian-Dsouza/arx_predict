@@ -70,6 +70,8 @@ pub mod arx_predict {
         Ok(())
     }
 
+    
+
     #[arcium_callback(encrypted_ix = "init_user_position")]
     pub fn init_user_position_callback(
         ctx: Context<InitUserPositionCallback>,
@@ -113,6 +115,38 @@ pub mod arx_predict {
         emit!(VoteEvent {
             timestamp: current_timestamp,
             total_votes,
+            amount,
+        });
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "buy_shares")]
+    pub fn buy_shares_callback(
+        ctx: Context<BuySharesCallback>,
+        output: ComputationOutputs<BuySharesOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
+        ctx.accounts.market_acc.nonce = o.field_0.nonce;
+        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
+        // let total_votes = o.field_2;
+        let amount = o.field_2;
+       
+
+        
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+        emit!(BuySharesEvent {
+            timestamp: current_timestamp,
             amount,
         });
 
@@ -193,6 +227,24 @@ pub mod arx_predict {
         amount: u64,
     ) -> Result<()> {
         ctx.accounts.vote(
+            vote,
+            vote_encryption_pubkey,
+            vote_nonce,
+            computation_offset,
+            amount
+        )
+    }
+
+    pub fn buy_shares(
+        ctx: Context<BuyShares>,
+        computation_offset: u64,
+        _id: u32,
+        vote: [u8; 32],
+        vote_encryption_pubkey: [u8; 32],
+        vote_nonce: u128,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.buy_shares(
             vote,
             vote_encryption_pubkey,
             vote_nonce,

@@ -310,3 +310,64 @@ export async function revealResult(
       const revealEvent = await revealResultEventPromise;
       return revealEvent;
 }
+
+export async function buyShares(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  cipher: RescueCipher,
+  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  owner: PublicKey,
+  marketId: number,
+  vote: number,
+  amount: number,
+  buySharesEventPromise: any
+) {
+  console.log(`Buying shares for poll ${marketId}`);
+  const nonce = randomBytes(16);
+  const voteBigInt = BigInt(vote);
+  const plaintext = [voteBigInt];
+  const ciphertext = cipher.encrypt(plaintext, nonce);
+  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueBuySharesSig = await program.methods
+    .buyShares(
+      voteComputationOffset,
+      marketId,
+      Array.from(ciphertext[0]),
+      Array.from(mpcPublicKey),
+      new anchor.BN(deserializeLE(nonce).toString()),
+      new anchor.BN(amount)
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        voteComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("buy_shares")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Queue buy shares for poll ${marketId} sig is `, queueBuySharesSig);
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    voteComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize buy shares for poll ${marketId} sig is `, finalizeSig);
+
+  const buySharesEvent = await buySharesEventPromise;
+  console.log(
+    `Buy shares for poll ${marketId} at timestamp `,
+    buySharesEvent.timestamp.toString(),
+    `with ${buySharesEvent.amount} shares`
+  );
+}
