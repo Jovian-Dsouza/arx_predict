@@ -370,6 +370,7 @@ export async function buyShares(
   console.log(
     `Buy shares for poll ${marketId} at timestamp `,
     buySharesEvent.timestamp.toString(),
-    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`
+    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`,
+    `status: ${buySharesEvent.status}`
   );
 }

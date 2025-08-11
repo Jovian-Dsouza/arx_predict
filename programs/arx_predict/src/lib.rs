@@ -130,24 +130,33 @@ pub mod arx_predict {
             ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
+        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
 
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+
+        if ctx.accounts.user_position_acc.balance < amount {
+            emit!(BuySharesEvent {
+                status: 0,
+                timestamp: current_timestamp,
+                amount: o.field_2,
+                amount_u64: amount,
+            });
+            return Ok(()); //TODO, cant return error here ?
+            // return Err(ErrorCode::InsufficientPayment.into());
+        }
+        ctx.accounts.user_position_acc.balance -= amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
-
-        if ctx.accounts.user_position_acc.balance < amount {
-            return Err(ErrorCode::InsufficientPayment.into());
-        }
-        ctx.accounts.user_position_acc.balance -= amount;
        
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
-
+        
         emit!(BuySharesEvent {
+            status: 1,
             timestamp: current_timestamp,
             amount: o.field_2,
             amount_u64: amount,
