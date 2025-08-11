@@ -59,6 +59,7 @@ pub mod arx_predict {
 
         ctx.accounts.market_acc.vote_state = o.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
 
         Ok(())
@@ -92,6 +93,7 @@ pub mod arx_predict {
 
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
+        // ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;

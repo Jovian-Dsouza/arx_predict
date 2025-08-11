@@ -8,6 +8,7 @@ pub struct MarketAccount {
     pub nonce: u128,
     pub vote_state: [[u8; 32]; MAX_OPTIONS],
     pub probs: [[u8; 32]; MAX_OPTIONS],
+    pub cost: [u8; 32],
     pub liquidity_parameter: u64,
     pub id: u32,
     pub authority: Pubkey,

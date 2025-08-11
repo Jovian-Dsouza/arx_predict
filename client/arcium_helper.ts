@@ -177,7 +177,7 @@ export async function createMarket(
     })
     .rpc();
 
-  console.log(`Poll ${marketId} created with signature`, pollSig);
+  console.log(`Market ${marketId} created with signature`, pollSig);
 
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -185,7 +185,7 @@ export async function createMarket(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize poll ${marketId} sig is `, finalizePollSig);
+  console.log(`Finalize Market ${marketId} sig is `, finalizePollSig);
 }
 
 export async function vote(

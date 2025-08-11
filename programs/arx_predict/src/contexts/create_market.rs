@@ -101,9 +101,12 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.options = options;
         self.market_acc.vote_state = [[0; 32]; MAX_OPTIONS];
         self.market_acc.probs = [[0; 32]; MAX_OPTIONS];
+        self.market_acc.cost = [0; 32];
+
+        //TODO: Market maker pays b*ln(MAX_OPTIONS)
 
         let args = vec![Argument::PlaintextU128(nonce)];
-
+        // Calls init_vote_stats
         queue_computation(
             self,
             computation_offset,
