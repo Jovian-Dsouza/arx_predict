@@ -34,6 +34,7 @@ import {
   initRevealResultCompDef,
   initRevealProbsCompDef,
   initVoteStatsCompDef,
+  initBuySharesCompDef,
 } from "../client/init_comp_defs";
 import { randomBytes } from "crypto";
 
@@ -104,6 +105,12 @@ describe("Voting", () => {
       false
     );
     const initRPSig = await initRevealProbsCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
+    );
+    const initBuySharesSig = await initBuySharesCompDef(
       provider as anchor.AnchorProvider,
       program,
       owner,

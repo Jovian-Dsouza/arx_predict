@@ -130,9 +130,9 @@ mod circuits {
         }
 
         let (probs, cost) = cal_prob(&market_stats.vote_stats, &liquidity_parameter);
-        let amount = cost;//- market_stats.cost;
+        let amount = cost - market_stats.cost;
         market_stats.probs = probs;
-        // market_stats.cost = cost;
+        market_stats.cost = cost;
 
         (
             market_stats_ctxt.owner.from_arcis(market_stats), 
