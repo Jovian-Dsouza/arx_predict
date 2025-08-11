@@ -131,17 +131,17 @@ describe("Voting", () => {
       );
     }
 
-    // // Reveal probs for each poll
-    // for (let i = 0; i < POLL_IDS.length; i++) {
-    //   const POLL_ID = POLL_IDS[i];
-    //   const probs = await getProbs(
-    //     provider as anchor.AnchorProvider,
-    //     program,
-    //     POLL_ID,
-    //     arciumEnv.arciumClusterPubkey,
-    //     awaitEvent("revealProbsEvent")
-    //   );
-    // }
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(
+        provider as anchor.AnchorProvider,
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        awaitEvent("revealProbsEvent")
+      );
+    }
 
     for (const POLL_ID of POLL_IDS) {
       await createUserPosition(
@@ -213,19 +213,17 @@ describe("Voting", () => {
       );
     }
     // Reveal probs for each poll
-    // for (let i = 0; i < POLL_IDS.length; i++) {
-    //   const POLL_ID = POLL_IDS[i];
-    //   const probs = await getProbs(
-    //     provider as anchor.AnchorProvider,
-    //     program,
-    //     POLL_ID,
-    //     arciumEnv.arciumClusterPubkey,
-    //     awaitEvent("revealProbsEvent")
-    //   );
-    //   console.log(`Probs for poll ${POLL_ID}:`, probs);
-    //   // expect(revealProbsEvent.share0).to.equal(0.5);
-    //   // expect(revealProbsEvent.share1).to.equal(0.5);
-    // }
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(
+        provider as anchor.AnchorProvider,
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        awaitEvent("revealProbsEvent")
+      );
+      console.log(`Probs for poll ${POLL_ID}:`, probs);
+    }
 
     // Reveal results for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
