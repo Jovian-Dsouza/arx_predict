@@ -6,6 +6,8 @@ pub mod reveal_result;
 pub mod create_user_position;
 pub mod send_payment;
 pub mod reveal_probs;
+pub mod buy_shares;
+pub mod sell_shares;
 
 pub use comp_def::*;
 pub use callbacks::*;
@@ -15,3 +17,5 @@ pub use reveal_result::*;
 pub use create_user_position::*;
 pub use send_payment::*;
 pub use reveal_probs::*;
+pub use buy_shares::*;
+pub use sell_shares::*;

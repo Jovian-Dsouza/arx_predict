@@ -18,3 +18,20 @@ pub struct RevealProbsEvent {
     pub share0: f64,
     pub share1: f64,
 }
+
+#[event]
+pub struct BuySharesEvent {
+    pub status: u8,
+    pub timestamp: i64,
+    pub amount: f64,
+    pub amount_u64: u64, //TODO
+}
+
+
+#[event]
+pub struct SellSharesEvent {
+    pub status: u8,
+    pub timestamp: i64,
+    pub amount: f64,
+    pub amount_u64: u64, //TODO
+}

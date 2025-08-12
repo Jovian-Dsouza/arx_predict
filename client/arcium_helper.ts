@@ -148,6 +148,7 @@ export async function createMarket(
   marketId: number,
   question: string,
   options: string[],
+  liquidity_parameter: number,
   mint: PublicKey
 ) {
   const nonce = randomBytes(16);
@@ -158,6 +159,7 @@ export async function createMarket(
       marketId,
       question,
       options,
+      new anchor.BN(liquidity_parameter),
       new anchor.BN(deserializeLE(nonce).toString())
     )
     .accountsPartial({
@@ -177,7 +179,7 @@ export async function createMarket(
     })
     .rpc();
 
-  console.log(`Poll ${marketId} created with signature`, pollSig);
+  console.log(`Market ${marketId} created with signature`, pollSig);
 
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -185,7 +187,7 @@ export async function createMarket(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize poll ${marketId} sig is `, finalizePollSig);
+  console.log(`Finalize Market ${marketId} sig is `, finalizePollSig);
 }
 
 export async function vote(
@@ -309,4 +311,128 @@ export async function revealResult(
 
       const revealEvent = await revealResultEventPromise;
       return revealEvent;
+}
+
+export async function buyShares(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  cipher: RescueCipher,
+  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  owner: PublicKey,
+  marketId: number,
+  vote: number,
+  shares: number,
+  buySharesEventPromise: any
+) {
+  console.log(`Buying shares for poll ${marketId}`);
+  const nonce = randomBytes(16);
+  const voteBigInt = BigInt(vote);
+  const plaintext = [voteBigInt];
+  const ciphertext = cipher.encrypt(plaintext, nonce);
+  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueBuySharesSig = await program.methods
+    .buyShares(
+      voteComputationOffset,
+      marketId,
+      Array.from(ciphertext[0]),
+      Array.from(mpcPublicKey),
+      new anchor.BN(deserializeLE(nonce).toString()),
+      new anchor.BN(shares)
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        voteComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("buy_shares")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Queue buy shares for poll ${marketId} sig is `, queueBuySharesSig);
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    voteComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize buy shares for poll ${marketId} sig is `, finalizeSig);
+
+  const buySharesEvent = await buySharesEventPromise;
+  console.log(
+    `Buy shares for poll ${marketId} at timestamp `,
+    buySharesEvent.timestamp.toString(),
+    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`,
+    `status: ${buySharesEvent.status}`
+  );
+}
+
+export async function sellShares(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  cipher: RescueCipher,
+  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  owner: PublicKey,
+  marketId: number,
+  vote: number,
+  shares: number,
+  sellSharesEventPromise: any
+) {
+  console.log(`Selling shares for poll ${marketId}`);
+  const nonce = randomBytes(16);
+  const voteBigInt = BigInt(vote);
+  const plaintext = [voteBigInt];
+  const ciphertext = cipher.encrypt(plaintext, nonce);
+  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueSellSharesSig = await program.methods
+    .sellShares(
+      voteComputationOffset,
+      marketId,
+      Array.from(ciphertext[0]),
+      Array.from(mpcPublicKey),
+      new anchor.BN(deserializeLE(nonce).toString()),
+      new anchor.BN(shares)
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        voteComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("sell_shares")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Queue sell shares for poll ${marketId} sig is `, queueSellSharesSig);
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    voteComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
+
+  const sellSharesEvent = await sellSharesEventPromise;
+  console.log(
+    `Sell shares for poll ${marketId} at timestamp `,
+    sellSharesEvent.timestamp.toString(),
+    `with ${sellSharesEvent.amount} usd and ${sellSharesEvent.amountU64} usdc`,
+    `status: ${sellSharesEvent.status}`
+  );
 }

@@ -36,6 +36,16 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_buy_shares_comp_def(ctx: Context<InitBuySharesCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
+    pub fn init_sell_shares_comp_def(ctx: Context<InitSellSharesCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
@@ -59,10 +69,13 @@ pub mod arx_predict {
 
         ctx.accounts.market_acc.vote_state = o.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
 
         Ok(())
     }
+
+    
 
     #[arcium_callback(encrypted_ix = "init_user_position")]
     pub fn init_user_position_callback(
@@ -80,6 +93,7 @@ pub mod arx_predict {
         Ok(())
     }
 
+    // TODO DEPRECATED
     #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(
         ctx: Context<VoteCallback>,
@@ -92,6 +106,7 @@ pub mod arx_predict {
 
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
@@ -107,6 +122,95 @@ pub mod arx_predict {
             timestamp: current_timestamp,
             total_votes,
             amount,
+        });
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "buy_shares")]
+    pub fn buy_shares_callback(
+        ctx: Context<BuySharesCallback>,
+        output: ComputationOutputs<BuySharesOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
+
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+
+        if ctx.accounts.user_position_acc.balance < amount {
+            emit!(BuySharesEvent {
+                status: 0,
+                timestamp: current_timestamp,
+                amount: o.field_2,
+                amount_u64: amount,
+            });
+            return Ok(()); //TODO, cant return error here ?
+            // return Err(ErrorCode::InsufficientPayment.into());
+        }
+        ctx.accounts.user_position_acc.balance -= amount;
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
+        ctx.accounts.market_acc.nonce = o.field_0.nonce;
+        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
+       
+        
+        emit!(BuySharesEvent {
+            status: 1,
+            timestamp: current_timestamp,
+            amount: o.field_2,
+            amount_u64: amount,
+        });
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "sell_shares")]
+    pub fn sell_shares_callback(
+        ctx: Context<SellSharesCallback>,
+        output: ComputationOutputs<SellSharesOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(SellSharesOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+        let status = o.field_3;
+
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+
+        if status == 0 { // Insufficient shares
+            emit!(SellSharesEvent {
+                status: 0,
+                timestamp: current_timestamp,
+                amount: 0.0,
+                amount_u64: 0,
+            });
+            return Ok(()); //TODO, cant return error here ?
+            // return Err(ErrorCode::InsufficientPayment.into());
+        }
+        let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
+        ctx.accounts.user_position_acc.balance += amount;
+        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
+        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
+        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
+        ctx.accounts.market_acc.nonce = o.field_0.nonce;
+        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
+       
+        
+        emit!(SellSharesEvent {
+            status: 1,
+            timestamp: current_timestamp,
+            amount: o.field_2,
+            amount_u64: amount,
         });
 
         Ok(())
@@ -151,12 +255,14 @@ pub mod arx_predict {
         id: u32,
         question: String,
         options: [String; MAX_OPTIONS],
+        liquidity_parameter: u64,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_market(
             id,
             question,
             options,
+            liquidity_parameter,
             nonce,
             computation_offset,
             ctx.bumps.market_acc,
@@ -191,6 +297,42 @@ pub mod arx_predict {
             vote_nonce,
             computation_offset,
             amount
+        )
+    }
+
+    pub fn buy_shares(
+        ctx: Context<BuyShares>,
+        computation_offset: u64,
+        _id: u32,
+        vote: [u8; 32],
+        vote_encryption_pubkey: [u8; 32],
+        vote_nonce: u128,
+        shares: u64,
+    ) -> Result<()> {
+        ctx.accounts.buy_shares(
+            vote,
+            vote_encryption_pubkey,
+            vote_nonce,
+            computation_offset,
+            shares
+        )
+    }
+
+    pub fn sell_shares(
+        ctx: Context<SellShares>,
+        computation_offset: u64,
+        _id: u32,
+        vote: [u8; 32],
+        vote_encryption_pubkey: [u8; 32],
+        vote_nonce: u128,
+        shares: u64,
+    ) -> Result<()> {
+        ctx.accounts.sell_shares(
+            vote,
+            vote_encryption_pubkey,
+            vote_nonce,
+            computation_offset,
+            shares
         )
     }
 

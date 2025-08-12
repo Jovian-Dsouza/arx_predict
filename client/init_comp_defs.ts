@@ -337,3 +337,121 @@ export async function initRevealProbsCompDef(
 
   return sig;
 }
+
+export async function initBuySharesCompDef(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("buy_shares");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  console.log("Init Buy Shares computation definition pda is ", compDefPDA.toBase58());
+
+  const sig = await program.methods
+    .initBuySharesCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+  console.log("Inited buy shares computation definition transaction", sig);
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync("build/buy_shares.arcis");
+
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "buy_shares",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash = await provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+
+    await provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
+}
+
+export async function initSellSharesCompDef(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("sell_shares");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  console.log("Init Sell Shares computation definition pda is ", compDefPDA.toBase58());
+
+  const sig = await program.methods
+    .initSellSharesCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+  console.log("Inited sell shares computation definition transaction", sig);
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync("build/sell_shares.arcis");
+
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "sell_shares",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash = await provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+
+    await provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
+}
