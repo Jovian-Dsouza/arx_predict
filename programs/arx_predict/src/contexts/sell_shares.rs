@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{COMP_DEF_OFFSET_SELL_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_SELL_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("sell_shares", payer)]
 #[derive(Accounts)]
