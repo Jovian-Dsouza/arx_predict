@@ -28,6 +28,7 @@ import {
   revealResult,
   buyShares,
   sellShares,
+  withdrawPayment,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -243,6 +244,12 @@ describe("Voting", () => {
         revealEvent.output
       );
       expect(revealEvent.output).to.equal(expectedOutcome);
+    }
+
+
+    // Withdraw payments for each poll
+    for (const POLL_ID of POLL_IDS) {
+      await withdrawPayment(program, owner, ata, mint, POLL_ID, 1 * 1e6);
     }
   });
 

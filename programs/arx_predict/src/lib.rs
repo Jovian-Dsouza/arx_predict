@@ -300,4 +300,12 @@ pub mod arx_predict {
         ctx.accounts.send_payment(amount)
     }
 
+    pub fn withdraw_payment(
+        ctx: Context<WithdrawPayment>,
+        id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.withdraw_payment(amount, id, ctx.bumps.vault)
+    }
+
 }

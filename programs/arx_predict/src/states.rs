@@ -36,5 +36,4 @@ pub enum MarketStatus {
     Inactive,
     Active,
     Settled,
-    Cancelled,
 }

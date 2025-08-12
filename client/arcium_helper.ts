@@ -210,6 +210,26 @@ export async function sendPayment(
     console.log(`Payment sent with signature`, sig);
 }
 
+export async function withdrawPayment(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+  mint: anchor.web3.PublicKey,
+  marketId: number,
+  amount: number
+) {
+  console.log(`Withdrawing payment of ${amount} from market ${marketId}`);
+  const sig = await program.methods
+    .withdrawPayment(marketId, new anchor.BN(amount))
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Payment withdrawn with signature`, sig);
+}
+
 export async function revealResult(
     provider: anchor.AnchorProvider,
     program: Program<ArxPredict>,
