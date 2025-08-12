@@ -62,6 +62,7 @@ pub mod arx_predict {
         ctx: Context<InitVoteStatsCallback>,
         output: ComputationOutputs<InitVoteStatsOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
@@ -99,6 +100,7 @@ pub mod arx_predict {
         ctx: Context<VoteCallback>,
         output: ComputationOutputs<VoteOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
@@ -132,6 +134,7 @@ pub mod arx_predict {
         ctx: Context<BuySharesCallback>,
         output: ComputationOutputs<BuySharesOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
@@ -174,6 +177,7 @@ pub mod arx_predict {
         ctx: Context<SellSharesCallback>,
         output: ComputationOutputs<SellSharesOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(SellSharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),

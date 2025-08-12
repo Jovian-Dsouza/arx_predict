@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_VOTE_STATS, MAX_OPTIONS};
+use crate::{states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_VOTE_STATS, ID, ID_CONST, MAX_OPTIONS};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Token, Mint, TokenAccount}
@@ -94,6 +94,13 @@ impl<'info> CreateMarket<'info> {
         computation_offset: u64,
         bump: u8,
     ) -> Result<()> {
+        // Validations
+        require!(liquidity_parameter > 0, ErrorCode::InvalidLiquidityParameter);
+        require!(self.market_acc.status == MarketStatus::Inactive, ErrorCode::MarketInactive);
+        for option in &options {
+            require!(!option.is_empty(), ErrorCode::EmptyOption);
+        }
+
         self.market_acc.id = id;
         self.market_acc.question = question;
         self.market_acc.bump = bump;
@@ -104,6 +111,7 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.probs = [[0; 32]; MAX_OPTIONS];
         self.market_acc.cost = [0; 32];
         self.market_acc.liquidity_parameter = liquidity_parameter;
+        self.market_acc.status = MarketStatus::Active;
 
         //TODO: Market maker pays b*ln(MAX_OPTIONS)
 

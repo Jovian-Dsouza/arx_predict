@@ -12,4 +12,12 @@ pub enum ErrorCode {
     ClusterNotSet,
     #[msg("Insufficient payment")]
     InsufficientPayment,
+    #[msg("Invalid liquidity parameter")]
+    InvalidLiquidityParameter,
+    #[msg("Empty option")]
+    EmptyOption,
+    #[msg("Market inactive")]
+    MarketInactive,
+    #[msg("Market active")]
+    MarketActive,
 }

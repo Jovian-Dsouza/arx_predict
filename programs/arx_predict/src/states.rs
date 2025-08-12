@@ -19,6 +19,7 @@ pub struct MarketAccount {
     pub updated_at: u64,
     pub expiry_at: u64,
     pub winning_outcome: u8,
+    pub status: MarketStatus,
 }
 
 #[account]
@@ -28,4 +29,12 @@ pub struct UserPosition {
     pub nonce: u128,
     pub shares: [[u8; 32]; MAX_OPTIONS],
     pub balance: u64,    
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, InitSpace)]
+pub enum MarketStatus {
+    Inactive,
+    Active,
+    Settled,
+    Cancelled,
 }
