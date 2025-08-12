@@ -160,27 +160,30 @@ mod circuits {
         let mut user_position = user_position_ctxt.to_arcis();
         let mut status: u8 = 1;
 
-        //TODO: check if user has enough shares to sell
         if user_vote.option == 0 {
-            market_stats.vote_stats.option0 -= shares;
-            user_position.option0 -= shares;
-
             if user_position.option0 < shares {
                 status = 0;
+            } else {
+                market_stats.vote_stats.option0 -= shares;
+                user_position.option0 -= shares;
             }
         } else if user_vote.option == 1 {
-            market_stats.vote_stats.option1 -= shares;
-            user_position.option1 -= shares;
-
             if user_position.option1 < shares {
                 status = 0;
+            } else {
+                market_stats.vote_stats.option1 -= shares;
+                user_position.option1 -= shares;
             }
         }
 
-        let (probs, cost) = cal_prob(&market_stats.vote_stats, &liquidity_parameter);
-        let amount = cost - market_stats.cost;
-        market_stats.probs = probs;
-        market_stats.cost = cost;
+        let mut amount = 0.0;
+        // Only update stats if shares were actually sold
+        if status == 1 {
+            let (probs, cost) = cal_prob(&market_stats.vote_stats, &liquidity_parameter);
+            amount = cost - market_stats.cost;
+            market_stats.probs = probs;
+            market_stats.cost = cost;
+        }
 
         (
             market_stats_ctxt.owner.from_arcis(market_stats), 
