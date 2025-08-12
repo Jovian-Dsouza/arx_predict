@@ -28,6 +28,7 @@ import {
   sendPayment,
   revealResult,
   buyShares,
+  sellShares,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -36,6 +37,7 @@ import {
   initRevealProbsCompDef,
   initVoteStatsCompDef,
   initBuySharesCompDef,
+  initSellSharesCompDef,
 } from "../client/init_comp_defs";
 import { randomBytes } from "crypto";
 
@@ -117,6 +119,12 @@ describe("Voting", () => {
       owner,
       false
     );
+    const initSellSharesSig = await initSellSharesCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
+    );
     console.log("Computation definitions initialized");
 
     const privateKey = x25519.utils.randomPrivateKey();
@@ -181,6 +189,34 @@ describe("Voting", () => {
         0,
         10,
         awaitEvent("buySharesEvent")
+      );
+    }
+    // Reveal probs for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const probs = await getProbs(
+        provider as anchor.AnchorProvider,
+        program,
+        POLL_ID,
+        arciumEnv.arciumClusterPubkey,
+        awaitEvent("revealProbsEvent")
+      );
+      console.log(`Probs for poll ${POLL_ID}:`, probs);
+    }
+
+    // Sell shares for each poll
+    for (const POLL_ID of POLL_IDS) {
+      await sellShares(
+        provider as anchor.AnchorProvider,
+        program,
+        arciumEnv.arciumClusterPubkey,
+        cipher,
+        publicKey,
+        owner.publicKey,
+        POLL_ID,
+        0,
+        5,
+        awaitEvent("sellSharesEvent")
       );
     }
     // Reveal probs for each poll

@@ -374,3 +374,65 @@ export async function buyShares(
     `status: ${buySharesEvent.status}`
   );
 }
+
+export async function sellShares(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  cipher: RescueCipher,
+  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  owner: PublicKey,
+  marketId: number,
+  vote: number,
+  shares: number,
+  sellSharesEventPromise: any
+) {
+  console.log(`Selling shares for poll ${marketId}`);
+  const nonce = randomBytes(16);
+  const voteBigInt = BigInt(vote);
+  const plaintext = [voteBigInt];
+  const ciphertext = cipher.encrypt(plaintext, nonce);
+  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueSellSharesSig = await program.methods
+    .sellShares(
+      voteComputationOffset,
+      marketId,
+      Array.from(ciphertext[0]),
+      Array.from(mpcPublicKey),
+      new anchor.BN(deserializeLE(nonce).toString()),
+      new anchor.BN(shares)
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        voteComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("sell_shares")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Queue sell shares for poll ${marketId} sig is `, queueSellSharesSig);
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    voteComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
+
+  const sellSharesEvent = await sellSharesEventPromise;
+  console.log(
+    `Sell shares for poll ${marketId} at timestamp `,
+    sellSharesEvent.timestamp.toString(),
+    `with ${sellSharesEvent.amount} usd and ${sellSharesEvent.amountU64} usdc`,
+    `status: ${sellSharesEvent.status}`
+  );
+}

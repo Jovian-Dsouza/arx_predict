@@ -142,6 +142,45 @@ mod circuits {
         )
     }
 
+    #[instruction]
+    pub fn sell_shares(
+        vote_ctxt: Enc<Shared, UserVote>,
+        shares: u64,
+        liquidity_parameter: u64,
+        market_stats_ctxt: Enc<Mxe, MarketStats>,
+        user_position_ctxt: Enc<Mxe, UserPosition>,
+    ) -> (
+        Enc<Mxe, MarketStats>, 
+        Enc<Mxe, UserPosition>, 
+        f64, // Amount to pay
+        // u64
+    ) {
+        let user_vote = vote_ctxt.to_arcis();
+        let mut market_stats = market_stats_ctxt.to_arcis();
+        let mut user_position = user_position_ctxt.to_arcis();
+
+        //TODO: check if user has enough shares to sell
+        if user_vote.option == 0 {
+            market_stats.vote_stats.option0 -= shares;
+            user_position.option0 -= shares;
+        } else if user_vote.option == 1 {
+            market_stats.vote_stats.option1 -= shares;
+            user_position.option1 -= shares;
+        }
+
+        let (probs, cost) = cal_prob(&market_stats.vote_stats, &liquidity_parameter);
+        let amount = cost - market_stats.cost;
+        market_stats.probs = probs;
+        market_stats.cost = cost;
+
+        (
+            market_stats_ctxt.owner.from_arcis(market_stats), 
+            user_position_ctxt.owner.from_arcis(user_position),
+            amount.reveal()
+            // shares
+        )
+    }
+
 
     fn cal_prob(vote_stats: &VoteStats, liquidity_parameter: &u64) -> (Probs, f64) {
         // let logit0 = (vote_stats.option0 as f64 + 1.0).ln(); // Add 1 for smoothing
