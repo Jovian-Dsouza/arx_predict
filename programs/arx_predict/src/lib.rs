@@ -146,8 +146,7 @@ pub mod arx_predict {
             emit!(BuySharesEvent {
                 status: 0,
                 timestamp: current_timestamp,
-                amount: o.field_2,
-                amount_u64: amount,
+                amount: amount,
             });
             return Ok(()); //TODO, cant return error here ?
             // return Err(ErrorCode::InsufficientPayment.into());
@@ -164,8 +163,7 @@ pub mod arx_predict {
         emit!(BuySharesEvent {
             status: 1,
             timestamp: current_timestamp,
-            amount: o.field_2,
-            amount_u64: amount,
+            amount: amount,
         });
 
         Ok(())
@@ -190,8 +188,7 @@ pub mod arx_predict {
             emit!(SellSharesEvent {
                 status: 0,
                 timestamp: current_timestamp,
-                amount: 0.0,
-                amount_u64: 0,
+                amount: 0,
             });
             return Ok(()); //TODO, cant return error here ?
             // return Err(ErrorCode::InsufficientPayment.into());
@@ -209,8 +206,7 @@ pub mod arx_predict {
         emit!(SellSharesEvent {
             status: 1,
             timestamp: current_timestamp,
-            amount: o.field_2,
-            amount_u64: amount,
+            amount: amount,
         });
 
         Ok(())
