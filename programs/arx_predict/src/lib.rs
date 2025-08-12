@@ -308,4 +308,12 @@ pub mod arx_predict {
         ctx.accounts.withdraw_payment(amount, id, ctx.bumps.vault)
     }
 
+    pub fn settle_market(
+        ctx: Context<SettleMarket>,
+        id: u32,
+        winner: u8,
+    ) -> Result<()> {
+        ctx.accounts.settle_market(id, winner)
+    }
+
 }

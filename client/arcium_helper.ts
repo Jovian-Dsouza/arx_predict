@@ -230,6 +230,22 @@ export async function withdrawPayment(
   console.log(`Payment withdrawn with signature`, sig);
 }
 
+export async function settleMarket(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  winner: number,
+  marketId: number,
+) {
+  console.log(`Settling market ${marketId} with winner ${winner}`);
+  const sig = await program.methods
+    .settleMarket(marketId, winner)
+    .accountsPartial({
+      payer: owner.publicKey,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Market settled with signature`, sig);
+}
+
 export async function revealResult(
     provider: anchor.AnchorProvider,
     program: Program<ArxPredict>,

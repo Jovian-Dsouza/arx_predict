@@ -8,6 +8,7 @@ pub mod reveal_probs;
 pub mod buy_shares;
 pub mod sell_shares;
 pub mod withdraw_payment;
+pub mod settle_market;
 
 pub use comp_def::*;
 pub use callbacks::*;
@@ -19,3 +20,4 @@ pub use reveal_probs::*;
 pub use buy_shares::*;
 pub use sell_shares::*;
 pub use withdraw_payment::*;
+pub use settle_market::*;

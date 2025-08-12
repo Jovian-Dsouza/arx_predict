@@ -29,6 +29,7 @@ import {
   buyShares,
   sellShares,
   withdrawPayment,
+  settleMarket,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -246,11 +247,15 @@ describe("Voting", () => {
       expect(revealEvent.output).to.equal(expectedOutcome);
     }
 
+    // Settle market
+    await settleMarket(program, owner, 0, POLL_IDS[0]);
+
 
     // Withdraw payments for each poll
     for (const POLL_ID of POLL_IDS) {
       await withdrawPayment(program, owner, ata, mint, POLL_ID, 1 * 1e6);
     }
+
   });
 
   
