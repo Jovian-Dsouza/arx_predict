@@ -111,8 +111,7 @@ pub mod arx_predict {
                 timestamp: current_timestamp,
                 amount: amount,
             });
-            return Ok(()); //TODO, cant return error here ?
-            // return Err(ErrorCode::InsufficientPayment.into());
+            return Ok(()); //TODO, cant return error here because of the callback
         }
         ctx.accounts.user_position_acc.balance -= amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
@@ -154,8 +153,7 @@ pub mod arx_predict {
                 timestamp: current_timestamp,
                 amount: 0,
             });
-            return Ok(()); //TODO, cant return error here ?
-            // return Err(ErrorCode::InsufficientPayment.into());
+            return Ok(()); //TODO, cant return error here because of the callback
         }
         let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
         ctx.accounts.user_position_acc.balance += amount;

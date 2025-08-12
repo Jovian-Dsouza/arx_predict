@@ -67,7 +67,6 @@ mod circuits {
         Enc<Mxe, MarketStats>, 
         Enc<Mxe, UserPosition>, 
         f64, // Amount to pay
-        // u64
     ) {
         let user_vote = vote_ctxt.to_arcis();
         let mut market_stats = market_stats_ctxt.to_arcis();
@@ -90,7 +89,6 @@ mod circuits {
             market_stats_ctxt.owner.from_arcis(market_stats), 
             user_position_ctxt.owner.from_arcis(user_position),
             amount.reveal()
-            // shares
         )
     }
 
