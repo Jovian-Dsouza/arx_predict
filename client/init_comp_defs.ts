@@ -148,65 +148,6 @@ export async function initUserPositionCompDef(
   return sig;
 }
 
-export async function initVoteCompDef(
-  provider: anchor.AnchorProvider,
-  program: Program<ArxPredict>,
-  owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
-): Promise<string> {
-  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-    "ComputationDefinitionAccount"
-  );
-  const offset = getCompDefAccOffset("vote");
-
-  const compDefPDA = PublicKey.findProgramAddressSync(
-    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
-  )[0];
-
-  console.log("Vote computation definition pda is ", compDefPDA.toBase58());
-
-  const sig = await program.methods
-    .initVoteCompDef()
-    .accounts({
-      compDefAccount: compDefPDA,
-      payer: owner.publicKey,
-      mxeAccount: getMXEAccAddress(program.programId),
-    })
-    .signers([owner])
-    .rpc({
-      commitment: "confirmed",
-    });
-  console.log("Init vote computation definition transaction", sig);
-
-  if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/vote.arcis");
-
-    await uploadCircuit(
-      provider as anchor.AnchorProvider,
-      "vote",
-      program.programId,
-      rawCircuit,
-      true
-    );
-  } else {
-    const finalizeTx = await buildFinalizeCompDefTx(
-      provider as anchor.AnchorProvider,
-      Buffer.from(offset).readUInt32LE(),
-      program.programId
-    );
-
-    const latestBlockhash = await provider.connection.getLatestBlockhash();
-    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-    finalizeTx.sign(owner);
-
-    await provider.sendAndConfirm(finalizeTx);
-  }
-  return sig;
-}
-
 export async function initRevealResultCompDef(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,

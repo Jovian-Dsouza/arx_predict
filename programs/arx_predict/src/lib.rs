@@ -31,11 +31,6 @@ pub mod arx_predict {
         Ok(())
     }
 
-    pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
-        Ok(())
-    }
-
     pub fn init_buy_shares_comp_def(ctx: Context<InitBuySharesCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
@@ -90,41 +85,6 @@ pub mod arx_predict {
 
         ctx.accounts.user_position_acc.shares = o.ciphertexts;
         ctx.accounts.user_position_acc.nonce = o.nonce;
-
-        Ok(())
-    }
-
-    // TODO DEPRECATED
-    #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(
-        ctx: Context<VoteCallback>,
-        output: ComputationOutputs<VoteOutput>,
-    ) -> Result<()> {
-        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
-        let o = match output {
-            ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
-        };
-
-        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
-        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
-        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
-        ctx.accounts.market_acc.nonce = o.field_0.nonce;
-        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
-        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-        let total_votes = o.field_2;
-        let amount = o.field_3;
-       
-
-        
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
-
-        emit!(VoteEvent {
-            timestamp: current_timestamp,
-            total_votes,
-            amount,
-        });
 
         Ok(())
     }
@@ -279,24 +239,6 @@ pub mod arx_predict {
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
-        )
-    }
-
-    pub fn vote(
-        ctx: Context<Vote>,
-        computation_offset: u64,
-        _id: u32,
-        vote: [u8; 32],
-        vote_encryption_pubkey: [u8; 32],
-        vote_nonce: u128,
-        amount: u64,
-    ) -> Result<()> {
-        ctx.accounts.vote(
-            vote,
-            vote_encryption_pubkey,
-            vote_nonce,
-            computation_offset,
-            amount
         )
     }
 

@@ -57,54 +57,6 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn vote(
-        vote_ctxt: Enc<Shared, UserVote>,
-        amount: u64,
-        market_stats_ctxt: Enc<Mxe, MarketStats>,
-        user_position_ctxt: Enc<Mxe, UserPosition>,
-    ) -> (
-        Enc<Mxe, MarketStats>, 
-        Enc<Mxe, UserPosition>, 
-        u64, 
-        u64
-    ) {
-        let user_vote = vote_ctxt.to_arcis();
-        let mut market_stats = market_stats_ctxt.to_arcis();
-        let mut user_position = user_position_ctxt.to_arcis();
-
-        if user_vote.option == 0 {
-            market_stats.vote_stats.option0 += 1;
-        } else if user_vote.option == 1 {
-            market_stats.vote_stats.option1 += 1;
-        }
-
-        let total_votes = market_stats.vote_stats.option0 + market_stats.vote_stats.option1;
-        
-        if total_votes > 0 {
-            // Convert vote counts to logits (log-odds)
-            let logit0 = (market_stats.vote_stats.option0 as f64 + 1.0).ln(); // Add 1 for smoothing
-            let logit1 = (market_stats.vote_stats.option1 as f64 + 1.0).ln(); // Add 1 for smoothing
-            
-            // Apply softmax to get probabilities
-            let max_logit = if logit0 > logit1 { logit0 } else { logit1 };
-            let exp0 = (logit0 - max_logit).exp();
-            let exp1 = (logit1 - max_logit).exp();
-            let sum_exp = exp0 + exp1;
-            
-
-            market_stats.probs.option0 = exp0 / sum_exp;
-            market_stats.probs.option1 = exp1 / sum_exp;
-        } 
-        
-        (
-            market_stats_ctxt.owner.from_arcis(market_stats), 
-            user_position_ctxt.owner.from_arcis(user_position),
-            total_votes.reveal(),
-            amount
-        )
-    }
-
-    #[instruction]
     pub fn buy_shares(
         vote_ctxt: Enc<Shared, UserVote>,
         shares: u64,

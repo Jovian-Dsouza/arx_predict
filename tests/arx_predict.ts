@@ -24,7 +24,6 @@ import {
   getProbs,
   createUserPosition,
   createMarket,
-  vote,
   sendPayment,
   revealResult,
   buyShares,
@@ -32,7 +31,6 @@ import {
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
-  initVoteCompDef,
   initRevealResultCompDef,
   initRevealProbsCompDef,
   initVoteStatsCompDef,
@@ -90,12 +88,6 @@ describe("Voting", () => {
     console.log("Initializing computation definitions");
     const initVoteStatsSig = await initVoteStatsCompDef(provider as anchor.AnchorProvider, program, owner, false);
     const initUserPositionSig = await initUserPositionCompDef(
-      provider as anchor.AnchorProvider,
-      program,
-      owner,
-      false
-    );
-    const initVoteSig = await initVoteCompDef(
       provider as anchor.AnchorProvider,
       program,
       owner,

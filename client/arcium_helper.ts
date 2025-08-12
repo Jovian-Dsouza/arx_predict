@@ -190,67 +190,6 @@ export async function createMarket(
   console.log(`Finalize Market ${marketId} sig is `, finalizePollSig);
 }
 
-export async function vote(
-  provider: anchor.AnchorProvider,
-  program: Program<ArxPredict>,
-  arciumClusterPubkey: PublicKey,
-  cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
-  owner: PublicKey,
-  marketId: number,
-  vote: number,
-  amount: number,
-  voteEventPromise: any
-) {
-  console.log(`Voting for poll ${marketId}`);
-  const nonce = randomBytes(16);
-  const voteBigInt = BigInt(vote);
-  const plaintext = [voteBigInt];
-  const ciphertext = cipher.encrypt(plaintext, nonce);
-  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
-  const queueVoteSig = await program.methods
-    .vote(
-      voteComputationOffset,
-      marketId,
-      Array.from(ciphertext[0]),
-      Array.from(mpcPublicKey),
-      new anchor.BN(deserializeLE(nonce).toString()),
-      new anchor.BN(amount)
-    )
-    .accountsPartial({
-      computationAccount: getComputationAccAddress(
-        program.programId,
-        voteComputationOffset
-      ),
-      clusterAccount: arciumClusterPubkey,
-      mxeAccount: getMXEAccAddress(program.programId),
-      mempoolAccount: getMempoolAccAddress(program.programId),
-      executingPool: getExecutingPoolAccAddress(program.programId),
-      compDefAccount: getCompDefAccAddress(
-        program.programId,
-        Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
-      ),
-      authority: owner,
-    })
-    .rpc({ commitment: "confirmed" });
-  console.log(`Queue vote for poll ${marketId} sig is `, queueVoteSig);
-
-  const finalizeSig = await awaitComputationFinalization(
-    provider as anchor.AnchorProvider,
-    voteComputationOffset,
-    program.programId,
-    "confirmed"
-  );
-  console.log(`Finalize vote for poll ${marketId} sig is `, finalizeSig);
-
-  const voteEvent = await voteEventPromise;
-  console.log(
-    `Vote casted for poll ${marketId} at timestamp `,
-    voteEvent.timestamp.toString(),
-    `with ${voteEvent.totalVotes} votes`
-  );
-}
-
 export async function sendPayment(
     program: Program<ArxPredict>,
     owner: anchor.web3.Keypair,
