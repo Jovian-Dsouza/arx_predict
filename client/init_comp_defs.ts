@@ -23,7 +23,7 @@ import {
   getMXEPublicKey,
 } from "@arcium-hq/client";
 
-export async function initVoteStatsCompDef(
+export async function initMarketStatsCompDef(
     provider: anchor.AnchorProvider,
     program: Program<ArxPredict>,
     owner: anchor.web3.Keypair,
@@ -32,7 +32,7 @@ export async function initVoteStatsCompDef(
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("init_vote_stats");
+    const offset = getCompDefAccOffset("init_market_stats");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -45,7 +45,7 @@ export async function initVoteStatsCompDef(
     );
 
     const sig = await program.methods
-      .initVoteStatsCompDef()
+      .initMarketStatsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
@@ -58,11 +58,11 @@ export async function initVoteStatsCompDef(
     console.log("Init vote stats computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+      const rawCircuit = fs.readFileSync("build/init_market_stats.arcis");
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "init_vote_stats",
+        "init_market_stats",
         program.programId,
         rawCircuit,
         true
@@ -121,7 +121,7 @@ export async function initUserPositionCompDef(
   console.log("Init user position computation definition transaction", sig);
 
   if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+    const rawCircuit = fs.readFileSync("build/init_market_stats.arcis");
 
     await uploadCircuit(
       provider as anchor.AnchorProvider,

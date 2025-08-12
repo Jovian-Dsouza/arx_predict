@@ -2,13 +2,13 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_VOTE_STATS, ID, ID_CONST, MAX_OPTIONS};
+use crate::{states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Token, Mint, TokenAccount}
 };
 
-#[queue_computation_accounts("init_vote_stats", payer)]
+#[queue_computation_accounts("init_market_stats", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, id: u32)]
 pub struct CreateMarket<'info> {
@@ -37,7 +37,7 @@ pub struct CreateMarket<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_MARKET_STATS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -116,7 +116,7 @@ impl<'info> CreateMarket<'info> {
         //TODO: Market maker pays b*ln(MAX_OPTIONS)
 
         let args = vec![Argument::PlaintextU128(nonce)];
-        // Calls init_vote_stats
+        // Calls init_market_stats
         queue_computation(
             self,
             computation_offset,

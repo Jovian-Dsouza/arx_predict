@@ -30,7 +30,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, MarketStats> {
+    pub fn init_market_stats(mxe: Mxe) -> Enc<Mxe, MarketStats> {
         let vote_stats = VoteStats { 
             option0: 0,
             option1: 0,

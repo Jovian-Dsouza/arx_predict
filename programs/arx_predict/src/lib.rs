@@ -21,7 +21,7 @@ pub mod arx_predict {
     use super::*;
 
     // INIT COMP DEF
-    pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
+    pub fn init_market_stats_comp_def(ctx: Context<InitMarketStatsCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
@@ -52,14 +52,14 @@ pub mod arx_predict {
     }
 
     // CALLBACKS
-    #[arcium_callback(encrypted_ix = "init_vote_stats")]
-    pub fn init_vote_stats_callback(
-        ctx: Context<InitVoteStatsCallback>,
-        output: ComputationOutputs<InitVoteStatsOutput>,
+    #[arcium_callback(encrypted_ix = "init_market_stats")]
+    pub fn init_market_stats_callback(
+        ctx: Context<InitMarketStatsCallback>,
+        output: ComputationOutputs<InitMarketStatsOutput>,
     ) -> Result<()> {
         require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
-            ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
+            ComputationOutputs::Success(InitMarketStatsOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 

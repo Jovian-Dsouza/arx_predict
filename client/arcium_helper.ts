@@ -173,7 +173,7 @@ export async function createMarket(
       executingPool: getExecutingPoolAccAddress(program.programId),
       compDefAccount: getCompDefAccAddress(
         program.programId,
-        Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
+        Buffer.from(getCompDefAccOffset("init_market_stats")).readUInt32LE()
       ),
       mint: mint,
     })

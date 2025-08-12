@@ -1,17 +1,17 @@
 use arcium_anchor::prelude::*;
 use anchor_lang::prelude::*;
 use crate::{
-    constants::{COMP_DEF_OFFSET_BUY_SHARES, COMP_DEF_OFFSET_SELL_SHARES}, MarketAccount, UserPosition, COMP_DEF_OFFSET_INIT_USER_POSITION, COMP_DEF_OFFSET_INIT_VOTE_STATS, COMP_DEF_OFFSET_REVEAL, COMP_DEF_OFFSET_REVEAL_PROBS, ID_CONST
+    constants::{COMP_DEF_OFFSET_BUY_SHARES, COMP_DEF_OFFSET_SELL_SHARES}, MarketAccount, UserPosition, COMP_DEF_OFFSET_INIT_USER_POSITION, COMP_DEF_OFFSET_INIT_MARKET_STATS, COMP_DEF_OFFSET_REVEAL, COMP_DEF_OFFSET_REVEAL_PROBS, ID_CONST
 };
 
-#[callback_accounts("init_vote_stats", payer)]
+#[callback_accounts("init_market_stats", payer)]
 #[derive(Accounts)]
-pub struct InitVoteStatsCallback<'info> {
+pub struct InitMarketStatsCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_MARKET_STATS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]

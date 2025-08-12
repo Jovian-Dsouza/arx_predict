@@ -3,9 +3,9 @@ use arcium_anchor::prelude::*;
 
 use crate::ID;
 
-#[init_computation_definition_accounts("init_vote_stats", payer)]
+#[init_computation_definition_accounts("init_market_stats", payer)]
 #[derive(Accounts)]
-pub struct InitVoteStatsCompDef<'info> {
+pub struct InitMarketStatsCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(

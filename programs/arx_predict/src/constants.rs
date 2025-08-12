@@ -1,6 +1,6 @@
 use arcium_anchor::comp_def_offset;
 
-pub const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
+pub const COMP_DEF_OFFSET_INIT_MARKET_STATS: u32 = comp_def_offset("init_market_stats");
 pub const COMP_DEF_OFFSET_INIT_USER_POSITION: u32 = comp_def_offset("init_user_position");
 pub const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 pub const COMP_DEF_OFFSET_REVEAL_PROBS: u32 = comp_def_offset("reveal_probs");

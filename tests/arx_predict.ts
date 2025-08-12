@@ -33,7 +33,7 @@ import {
   initUserPositionCompDef,
   initRevealResultCompDef,
   initRevealProbsCompDef,
-  initVoteStatsCompDef,
+  initMarketStatsCompDef,
   initBuySharesCompDef,
   initSellSharesCompDef,
 } from "../client/init_comp_defs";
@@ -86,7 +86,7 @@ describe("Voting", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing computation definitions");
-    const initVoteStatsSig = await initVoteStatsCompDef(provider as anchor.AnchorProvider, program, owner, false);
+    const initVoteStatsSig = await initMarketStatsCompDef(provider as anchor.AnchorProvider, program, owner, false);
     const initUserPositionSig = await initUserPositionCompDef(
       provider as anchor.AnchorProvider,
       program,
