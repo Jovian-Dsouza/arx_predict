@@ -180,22 +180,23 @@ pub mod arx_predict {
             ComputationOutputs::Success(SellSharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
-        let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
+        let status = o.field_3;
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
 
-        if ctx.accounts.user_position_acc.balance < amount {
+        if status == 0 { // Insufficient shares
             emit!(SellSharesEvent {
                 status: 0,
                 timestamp: current_timestamp,
-                amount: o.field_2,
-                amount_u64: amount,
+                amount: 0.0,
+                amount_u64: 0,
             });
             return Ok(()); //TODO, cant return error here ?
             // return Err(ErrorCode::InsufficientPayment.into());
         }
+        let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
         ctx.accounts.user_position_acc.balance += amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();

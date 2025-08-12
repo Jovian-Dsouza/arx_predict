@@ -153,19 +153,28 @@ mod circuits {
         Enc<Mxe, MarketStats>, 
         Enc<Mxe, UserPosition>, 
         f64, // Amount to pay
-        // u64
+        u8, // Status
     ) {
         let user_vote = vote_ctxt.to_arcis();
         let mut market_stats = market_stats_ctxt.to_arcis();
         let mut user_position = user_position_ctxt.to_arcis();
+        let mut status: u8 = 1;
 
         //TODO: check if user has enough shares to sell
         if user_vote.option == 0 {
             market_stats.vote_stats.option0 -= shares;
             user_position.option0 -= shares;
+
+            if user_position.option0 < shares {
+                status = 0;
+            }
         } else if user_vote.option == 1 {
             market_stats.vote_stats.option1 -= shares;
             user_position.option1 -= shares;
+
+            if user_position.option1 < shares {
+                status = 0;
+            }
         }
 
         let (probs, cost) = cal_prob(&market_stats.vote_stats, &liquidity_parameter);
@@ -176,8 +185,8 @@ mod circuits {
         (
             market_stats_ctxt.owner.from_arcis(market_stats), 
             user_position_ctxt.owner.from_arcis(user_position),
-            amount.reveal()
-            // shares
+            amount.reveal(),
+            status.reveal(),
         )
     }
 
