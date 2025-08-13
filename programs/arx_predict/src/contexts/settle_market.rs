@@ -9,6 +9,7 @@ pub struct SettleMarket<'info> {
     pub payer: Signer<'info>,
    
     #[account(
+        mut,
         seeds = [b"market", id.to_le_bytes().as_ref()],
         bump = market_acc.bump
     )]
