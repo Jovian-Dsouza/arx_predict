@@ -186,4 +186,30 @@ mod circuits {
         probabilities
     }
 
+    #[instruction]
+    pub fn claim_rewards(
+        winning_outcome: u8,
+        market_stats_ctxt: Enc<Mxe, MarketStats>,
+        user_position_ctxt: Enc<Mxe, UserPosition>,
+    ) -> (
+        Enc<Mxe, UserPosition>, 
+        u64, // Amount to claim
+    ) {
+        let market_stats = market_stats_ctxt.to_arcis();
+        let mut user_position = user_position_ctxt.to_arcis();
+
+        let mut reward: u64 = 0;
+        if winning_outcome == 0 {
+            reward = user_position.option0 * (1000000u64);
+        } else if winning_outcome == 1 {
+            reward = user_position.option1 * (1000000u64);
+        }
+        user_position.option0 = 0;
+        user_position.option1 = 0;
+
+        (
+            user_position_ctxt.owner.from_arcis(user_position),
+            reward.reveal()
+        )
+    }
 }

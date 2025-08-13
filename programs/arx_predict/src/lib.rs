@@ -51,6 +51,11 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_claim_rewards_comp_def(ctx: Context<InitClaimRewardsCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     // CALLBACKS
     #[arcium_callback(encrypted_ix = "init_market_stats")]
     pub fn init_market_stats_callback(

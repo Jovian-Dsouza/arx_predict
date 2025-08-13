@@ -38,6 +38,7 @@ import {
   initMarketStatsCompDef,
   initBuySharesCompDef,
   initSellSharesCompDef,
+  initClaimRewardsCompDef,
 } from "../client/init_comp_defs";
 import { randomBytes } from "crypto";
 
@@ -114,6 +115,12 @@ describe("Voting", () => {
       false
     );
     const initSellSharesSig = await initSellSharesCompDef(
+      provider as anchor.AnchorProvider,
+      program,
+      owner,
+      false
+    );
+    const initClaimRewardsSig = await initClaimRewardsCompDef(
       provider as anchor.AnchorProvider,
       program,
       owner,
