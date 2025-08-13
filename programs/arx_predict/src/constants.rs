@@ -1,12 +1,12 @@
 use arcium_anchor::comp_def_offset;
 
-pub const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
+pub const COMP_DEF_OFFSET_INIT_MARKET_STATS: u32 = comp_def_offset("init_market_stats");
 pub const COMP_DEF_OFFSET_INIT_USER_POSITION: u32 = comp_def_offset("init_user_position");
-pub const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 pub const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 pub const COMP_DEF_OFFSET_REVEAL_PROBS: u32 = comp_def_offset("reveal_probs");
 pub const COMP_DEF_OFFSET_BUY_SHARES: u32 = comp_def_offset("buy_shares");
 pub const COMP_DEF_OFFSET_SELL_SHARES: u32 = comp_def_offset("sell_shares");
+pub const COMP_DEF_OFFSET_CLAIM_REWARDS: u32 = comp_def_offset("claim_rewards");
 
 pub const MAX_OPTIONS: usize = 2;
 pub const MAX_QUESTION_LENGTH: usize = 50;

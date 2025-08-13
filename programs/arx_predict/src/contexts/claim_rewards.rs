@@ -2,12 +2,12 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_CLAIM_REWARDS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, ID, ID_CONST};
 
-#[queue_computation_accounts("vote", payer)]
+#[queue_computation_accounts("claim_rewards", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64, _id: u32)]
-pub struct Vote<'info> {
+pub struct ClaimRewards<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -33,7 +33,7 @@ pub struct Vote<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_CLAIM_REWARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -72,28 +72,15 @@ pub struct Vote<'info> {
     pub user_position_acc: Account<'info, UserPosition>,
 }
 
-impl<'info> Vote<'info> {
-    pub fn vote(
+impl<'info> ClaimRewards<'info> {
+    pub fn claim_rewards(
         &mut self,
-        vote: [u8; 32],
-        vote_encryption_pubkey: [u8; 32],
-        vote_nonce: u128,
         computation_offset: u64,
-        amount: u64,
     ) -> Result<()> {
-
-        if self.user_position_acc.balance < amount {
-            return Err(ErrorCode::InsufficientPayment.into());
-        }
-
-        self.user_position_acc.balance -= amount;
+        require!(self.market_acc.status == MarketStatus::Settled, ErrorCode::MarketNotSettled);
 
         let args = vec![
-            Argument::ArcisPubkey(vote_encryption_pubkey),
-            Argument::PlaintextU128(vote_nonce),
-            Argument::EncryptedBool(vote),
-            // Argument::PlaintextU128(vote_nonce),
-            Argument::PlaintextU64(amount),
+            Argument::PlaintextU8(self.market_acc.winning_outcome),
             Argument::PlaintextU128(self.market_acc.nonce),
             Argument::Account(
                 self.market_acc.key(),
@@ -113,9 +100,6 @@ impl<'info> Vote<'info> {
             computation_offset,
             args,
             vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
-                is_writable: true,
-            }, CallbackAccount {
                 pubkey: self.user_position_acc.key(),
                 is_writable: true,
             }],

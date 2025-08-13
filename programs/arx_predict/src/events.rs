@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use crate::MAX_OPTIONS;
 
 #[event]
 pub struct VoteEvent {
@@ -23,8 +22,7 @@ pub struct RevealProbsEvent {
 pub struct BuySharesEvent {
     pub status: u8,
     pub timestamp: i64,
-    pub amount: f64,
-    pub amount_u64: u64, //TODO
+    pub amount: u64,
 }
 
 
@@ -32,6 +30,10 @@ pub struct BuySharesEvent {
 pub struct SellSharesEvent {
     pub status: u8,
     pub timestamp: i64,
-    pub amount: f64,
-    pub amount_u64: u64, //TODO
+    pub amount: u64,
+}
+
+#[event]
+pub struct ClaimRewardsEvent {
+    pub amount: u64,
 }

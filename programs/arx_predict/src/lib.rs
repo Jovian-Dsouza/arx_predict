@@ -21,17 +21,12 @@ pub mod arx_predict {
     use super::*;
 
     // INIT COMP DEF
-    pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
+    pub fn init_market_stats_comp_def(ctx: Context<InitMarketStatsCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
     pub fn init_user_position_comp_def(ctx: Context<InitUserPositionCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
-        Ok(())
-    }
-
-    pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
@@ -56,14 +51,20 @@ pub mod arx_predict {
         Ok(())
     }
 
+    pub fn init_claim_rewards_comp_def(ctx: Context<InitClaimRewardsCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        Ok(())
+    }
+
     // CALLBACKS
-    #[arcium_callback(encrypted_ix = "init_vote_stats")]
-    pub fn init_vote_stats_callback(
-        ctx: Context<InitVoteStatsCallback>,
-        output: ComputationOutputs<InitVoteStatsOutput>,
+    #[arcium_callback(encrypted_ix = "init_market_stats")]
+    pub fn init_market_stats_callback(
+        ctx: Context<InitMarketStatsCallback>,
+        output: ComputationOutputs<InitMarketStatsOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
-            ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
+            ComputationOutputs::Success(InitMarketStatsOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
@@ -93,45 +94,12 @@ pub mod arx_predict {
         Ok(())
     }
 
-    // TODO DEPRECATED
-    #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(
-        ctx: Context<VoteCallback>,
-        output: ComputationOutputs<VoteOutput>,
-    ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
-        };
-
-        ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
-        ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
-        ctx.accounts.market_acc.cost = o.field_0.ciphertexts[4].try_into().unwrap();
-        ctx.accounts.market_acc.nonce = o.field_0.nonce;
-        ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
-        ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-        let total_votes = o.field_2;
-        let amount = o.field_3;
-       
-
-        
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
-
-        emit!(VoteEvent {
-            timestamp: current_timestamp,
-            total_votes,
-            amount,
-        });
-
-        Ok(())
-    }
-
     #[arcium_callback(encrypted_ix = "buy_shares")]
     pub fn buy_shares_callback(
         ctx: Context<BuySharesCallback>,
         output: ComputationOutputs<BuySharesOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
@@ -146,11 +114,9 @@ pub mod arx_predict {
             emit!(BuySharesEvent {
                 status: 0,
                 timestamp: current_timestamp,
-                amount: o.field_2,
-                amount_u64: amount,
+                amount: amount,
             });
-            return Ok(()); //TODO, cant return error here ?
-            // return Err(ErrorCode::InsufficientPayment.into());
+            return Ok(()); //TODO, cant return error here because of the callback
         }
         ctx.accounts.user_position_acc.balance -= amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
@@ -164,8 +130,7 @@ pub mod arx_predict {
         emit!(BuySharesEvent {
             status: 1,
             timestamp: current_timestamp,
-            amount: o.field_2,
-            amount_u64: amount,
+            amount: amount,
         });
 
         Ok(())
@@ -176,6 +141,7 @@ pub mod arx_predict {
         ctx: Context<SellSharesCallback>,
         output: ComputationOutputs<SellSharesOutput>,
     ) -> Result<()> {
+        require!(ctx.accounts.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let o = match output {
             ComputationOutputs::Success(SellSharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
@@ -190,11 +156,9 @@ pub mod arx_predict {
             emit!(SellSharesEvent {
                 status: 0,
                 timestamp: current_timestamp,
-                amount: 0.0,
-                amount_u64: 0,
+                amount: 0,
             });
-            return Ok(()); //TODO, cant return error here ?
-            // return Err(ErrorCode::InsufficientPayment.into());
+            return Ok(()); //TODO, cant return error here because of the callback
         }
         let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
         ctx.accounts.user_position_acc.balance += amount;
@@ -209,8 +173,7 @@ pub mod arx_predict {
         emit!(SellSharesEvent {
             status: 1,
             timestamp: current_timestamp,
-            amount: o.field_2,
-            amount_u64: amount,
+            amount: amount,
         });
 
         Ok(())
@@ -249,6 +212,28 @@ pub mod arx_predict {
         Ok(())
     }
 
+    #[arcium_callback(encrypted_ix = "claim_rewards")]
+    pub fn claim_rewards_callback(
+        ctx: Context<ClaimRewardsCallback>,
+        output: ComputationOutputs<ClaimRewardsOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(ClaimRewardsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+        let amount = o.field_1;
+        ctx.accounts.user_position_acc.balance += amount;
+        ctx.accounts.user_position_acc.shares = o.field_0.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_0.nonce;
+        
+        
+        emit!(ClaimRewardsEvent {
+            amount: amount,
+        });
+
+        Ok(())
+    }
+
     pub fn create_market(
         ctx: Context<CreateMarket>,
         computation_offset: u64,
@@ -279,24 +264,6 @@ pub mod arx_predict {
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
-        )
-    }
-
-    pub fn vote(
-        ctx: Context<Vote>,
-        computation_offset: u64,
-        _id: u32,
-        vote: [u8; 32],
-        vote_encryption_pubkey: [u8; 32],
-        vote_nonce: u128,
-        amount: u64,
-    ) -> Result<()> {
-        ctx.accounts.vote(
-            vote,
-            vote_encryption_pubkey,
-            vote_nonce,
-            computation_offset,
-            amount
         )
     }
 
@@ -358,6 +325,30 @@ pub mod arx_predict {
         amount: u64,
     ) -> Result<()> {
         ctx.accounts.send_payment(amount)
+    }
+
+    pub fn withdraw_payment(
+        ctx: Context<WithdrawPayment>,
+        id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.withdraw_payment(amount, id, ctx.bumps.vault)
+    }
+
+    pub fn settle_market(
+        ctx: Context<SettleMarket>,
+        id: u32,
+        winner: u8,
+    ) -> Result<()> {
+        ctx.accounts.settle_market(id, winner)
+    }
+
+    pub fn claim_rewards(
+        ctx: Context<ClaimRewards>,
+        computation_offset: u64,
+        _id: u32,
+    ) -> Result<()> {
+        ctx.accounts.claim_rewards(computation_offset)
     }
 
 }

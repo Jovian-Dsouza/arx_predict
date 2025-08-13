@@ -1,21 +1,25 @@
 pub mod comp_def;
 pub mod callbacks;
 pub mod create_market;
-pub mod vote;
 pub mod reveal_result;
 pub mod create_user_position;
 pub mod send_payment;
 pub mod reveal_probs;
 pub mod buy_shares;
 pub mod sell_shares;
+pub mod withdraw_payment;
+pub mod settle_market;
+pub mod claim_rewards;
 
 pub use comp_def::*;
 pub use callbacks::*;
 pub use create_market::*;
-pub use vote::*;
 pub use reveal_result::*;
 pub use create_user_position::*;
 pub use send_payment::*;
 pub use reveal_probs::*;
 pub use buy_shares::*;
 pub use sell_shares::*;
+pub use withdraw_payment::*;
+pub use settle_market::*;
+pub use claim_rewards::*;

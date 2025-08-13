@@ -23,7 +23,7 @@ import {
   getMXEPublicKey,
 } from "@arcium-hq/client";
 
-export async function initVoteStatsCompDef(
+export async function initMarketStatsCompDef(
     provider: anchor.AnchorProvider,
     program: Program<ArxPredict>,
     owner: anchor.web3.Keypair,
@@ -32,20 +32,15 @@ export async function initVoteStatsCompDef(
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("init_vote_stats");
+    const offset = getCompDefAccOffset("init_market_stats");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
       getArciumProgAddress()
     )[0];
 
-    console.log(
-      "Init vote stats computation definition pda is ",
-      compDefPDA.toBase58()
-    );
-
     const sig = await program.methods
-      .initVoteStatsCompDef()
+      .initMarketStatsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
@@ -55,14 +50,13 @@ export async function initVoteStatsCompDef(
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init vote stats computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+      const rawCircuit = fs.readFileSync("build/reveal_result.arcis");
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "init_vote_stats",
+        "reveal_result",
         program.programId,
         rawCircuit,
         true
@@ -91,7 +85,6 @@ export async function initUserPositionCompDef(
   owner: anchor.web3.Keypair,
   uploadRawCircuit: boolean
 ): Promise<string> {
-  console.log("Initializing user position computation definition");
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
   );
@@ -101,11 +94,6 @@ export async function initUserPositionCompDef(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
     getArciumProgAddress()
   )[0];
-
-  console.log(
-    "Init user position computation definition pda is ",
-    compDefPDA.toBase58()
-  );
 
   const sig = await program.methods
     .initUserPositionCompDef()
@@ -118,77 +106,17 @@ export async function initUserPositionCompDef(
     .rpc({
       commitment: "confirmed",
     });
-  console.log("Init user position computation definition transaction", sig);
 
-  if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
+      if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync("build/init_user_position.arcis");
 
-    await uploadCircuit(
-      provider as anchor.AnchorProvider,
-      "init_user_position",
-      program.programId,
-      rawCircuit,
-      true
-    );
-  } else {
-    const finalizeTx = await buildFinalizeCompDefTx(
-      provider as anchor.AnchorProvider,
-      Buffer.from(offset).readUInt32LE(),
-      program.programId
-    );
-
-    const latestBlockhash = await provider.connection.getLatestBlockhash();
-    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-    finalizeTx.sign(owner);
-
-    await provider.sendAndConfirm(finalizeTx);
-  }
-  return sig;
-}
-
-export async function initVoteCompDef(
-  provider: anchor.AnchorProvider,
-  program: Program<ArxPredict>,
-  owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
-): Promise<string> {
-  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-    "ComputationDefinitionAccount"
-  );
-  const offset = getCompDefAccOffset("vote");
-
-  const compDefPDA = PublicKey.findProgramAddressSync(
-    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
-  )[0];
-
-  console.log("Vote computation definition pda is ", compDefPDA.toBase58());
-
-  const sig = await program.methods
-    .initVoteCompDef()
-    .accounts({
-      compDefAccount: compDefPDA,
-      payer: owner.publicKey,
-      mxeAccount: getMXEAccAddress(program.programId),
-    })
-    .signers([owner])
-    .rpc({
-      commitment: "confirmed",
-    });
-  console.log("Init vote computation definition transaction", sig);
-
-  if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/vote.arcis");
-
-    await uploadCircuit(
-      provider as anchor.AnchorProvider,
-      "vote",
-      program.programId,
-      rawCircuit,
-      true
-    );
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "init_user_position",
+        program.programId,
+        rawCircuit,
+        true
+      );
   } else {
     const finalizeTx = await buildFinalizeCompDefTx(
       provider as anchor.AnchorProvider,
@@ -223,11 +151,6 @@ export async function initRevealResultCompDef(
     getArciumProgAddress()
   )[0];
 
-  console.log(
-    "Reveal result computation definition pda is ",
-    compDefPDA.toBase58()
-  );
-
   const sig = await program.methods
     .initRevealResultCompDef()
     .accounts({
@@ -239,14 +162,13 @@ export async function initRevealResultCompDef(
     .rpc({
       commitment: "confirmed",
     });
-  console.log("Init reveal result computation definition transaction", sig);
 
   if (uploadRawCircuit) {
     const rawCircuit = fs.readFileSync("build/reveal_result.arcis");
 
     await uploadCircuit(
       provider as anchor.AnchorProvider,
-      "reveal_result",
+      "init_market_stats",
       program.programId,
       rawCircuit,
       true
@@ -275,7 +197,6 @@ export async function initRevealProbsCompDef(
   owner: anchor.web3.Keypair,
   uploadRawCircuit: boolean
 ): Promise<string> {
-  console.log("Initializing reveal probs computation definition");
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
   );
@@ -285,11 +206,6 @@ export async function initRevealProbsCompDef(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
     getArciumProgAddress()
   )[0];
-
-  console.log(
-    "Reveal probs computation definition pda is ",
-    compDefPDA.toBase58()
-  );
 
   const sig = await program.methods
     .initRevealProbsCompDef()
@@ -302,7 +218,6 @@ export async function initRevealProbsCompDef(
     .rpc({
       commitment: "confirmed",
     });
-  console.log("Init reveal probs computation definition transaction", sig);
 
   if (uploadRawCircuit) {
     const rawCircuit = fs.readFileSync("build/reveal_probs.arcis");
@@ -330,11 +245,6 @@ export async function initRevealProbsCompDef(
     await provider.sendAndConfirm(finalizeTx);
   }
 
-  console.log(
-    "Reveal probs computation definition initialized with signature",
-    sig
-  );
-
   return sig;
 }
 
@@ -354,8 +264,6 @@ export async function initBuySharesCompDef(
     getArciumProgAddress()
   )[0];
 
-  console.log("Init Buy Shares computation definition pda is ", compDefPDA.toBase58());
-
   const sig = await program.methods
     .initBuySharesCompDef()
     .accounts({
@@ -367,7 +275,6 @@ export async function initBuySharesCompDef(
     .rpc({
       commitment: "confirmed",
     });
-  console.log("Inited buy shares computation definition transaction", sig);
 
   if (uploadRawCircuit) {
     const rawCircuit = fs.readFileSync("build/buy_shares.arcis");
@@ -413,8 +320,6 @@ export async function initSellSharesCompDef(
     getArciumProgAddress()
   )[0];
 
-  console.log("Init Sell Shares computation definition pda is ", compDefPDA.toBase58());
-
   const sig = await program.methods
     .initSellSharesCompDef()
     .accounts({
@@ -426,7 +331,6 @@ export async function initSellSharesCompDef(
     .rpc({
       commitment: "confirmed",
     });
-  console.log("Inited sell shares computation definition transaction", sig);
 
   if (uploadRawCircuit) {
     const rawCircuit = fs.readFileSync("build/sell_shares.arcis");
@@ -434,6 +338,62 @@ export async function initSellSharesCompDef(
     await uploadCircuit(
       provider as anchor.AnchorProvider,
       "sell_shares",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash = await provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+
+    await provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
+}
+
+export async function initClaimRewardsCompDef(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("claim_rewards");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  const sig = await program.methods
+    .initClaimRewardsCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync("build/claim_rewards.arcis");
+
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "claim_rewards",
       program.programId,
       rawCircuit,
       true

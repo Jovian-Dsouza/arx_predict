@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("reveal_result", payer)]
 #[derive(Accounts)]
@@ -68,8 +68,7 @@ impl<'info> RevealVotingResult<'info> {
             self.payer.key() == self.market_acc.authority,
             ErrorCode::InvalidAuthority
         );
-
-        msg!("Revealing voting result for poll with id {}", id);
+        require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
 
         let args = vec![
             Argument::PlaintextU128(self.market_acc.nonce),
@@ -81,6 +80,8 @@ impl<'info> RevealVotingResult<'info> {
         ];
 
         queue_computation(self, computation_offset, args, vec![], None)?;
+
+        //TODO: Settle market
         Ok(())
     }
 } 

@@ -1,107 +1,210 @@
-# Structure of this project
+# ArxPredict - Confidential Prediction Markets on Solana
 
-This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
+ArxPredict is a decentralized prediction market platform built on Solana that leverages Arcium's confidential computing infrastructure to enable privacy-preserving trading and voting mechanisms.
 
-- The `programs` dir like usual Anchor programs
-- The `encrypted-ixs` dir for confidential computing instructions
+## 🏗️ Architecture Overview
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+This project combines traditional Solana program development with Arcium's confidential computing capabilities:
 
-```rust
-// encrypted-ixs/add_together.rs
+- **`programs/arx_predict/`** - Main Solana program (Anchor-based)
+- **`encrypted-ixs/`** - Confidential computing circuits using Arcis framework
+- **`client/`** - TypeScript client utilities for interacting with the program
 
-use arcis_imports::*;
 
-#[encrypted]
-mod circuits {
-    use arcis_imports::*;
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
-    }
+## 📊 Core Features
 
-    #[instruction]
-    pub fn add_together(input_ctxt: Enc<Shared, InputValues>) -> Enc<Shared, u16> {
-        let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
-    }
-}
+### Prediction Markets
+- Create binary outcome markets (Yes/No questions)
+- Dynamic pricing based on liquidity and vote distribution
+- Automated market settlement
 
-// programs/my_program/src/lib.rs
+### Privacy-Preserving Trading
+- Encrypted vote submission
+- Confidential share trading
+- Hidden market statistics until revelation
 
-declare_id!("<some ID>");
+### Market Mechanics
+- **Liquidity Parameter**: Controls market sensitivity to trades
+- **Dynamic Pricing**: Uses exponential market scoring rule
+- **Share-based System**: Users trade shares representing outcomes
 
-#[arcium_program]
-pub mod my_program {
-    use super::*;
+## 🎯 Market Lifecycle
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
-        Ok(())
-    }
+1. **Market Creation**
+   - Initialize market with question and options
+   - Set liquidity parameter and expiry
+   - Create encrypted market statistics
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        computation_offset: u64,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
-        Ok(())
-    }
+2. **Trading Phase**
+   - Users buy/sell shares with encrypted votes
+   - Market prices update based on liquidity and demand
+   - All trading activity remains confidential
 
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(
-        ctx: Context<AddTogetherCallback>,
-        output: ComputationOutputs,
-    ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Success(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
-        };
+3. **Market Settlement**
+   - Reveal final vote counts and probabilities
+   - Determine winning outcome
+   - Distribute rewards to winning positions
 
-        emit!(SumEvent {
-            sum: bytes[48..80].try_into().unwrap(),
-            nonce: bytes[32..48].try_into().unwrap(),
-        });
-        Ok(())
-    }
-}
+## 🔧 Technical Implementation
 
-#[queue_computation_accounts("add_together", payer)]
-#[derive(Accounts)]
-#[instruction(computation_offset: u64)]
-pub struct AddTogether<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
+### Solana Program (`arx_predict`)
 
-#[callback_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-    pub some_extra_acc: AccountInfo<'info>,
-}
+The main program handles:
+- Market and user position account management
+- Payment processing and vault operations
+- Coordination with Arcium's confidential computing
 
-#[init_computation_definition_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
+#### Key Instructions
+- `create_market` - Initialize new prediction market
+- `buy_shares` / `sell_shares` - Trade market shares
+- `reveal_result` / `reveal_probs` - Expose market outcomes
+- `claim_rewards` - Collect winnings from settled markets
+
+### Confidential Circuits (`encrypted-ixs`)
+
+Implement the core market logic in a privacy-preserving manner:
+
+#### Market Statistics (`init_market_stats`)
+- Initialize vote counts and probabilities
+- Set starting cost and liquidity parameters
+
+#### Trading Operations (`buy_shares`, `sell_shares`)
+- Update vote counts based on encrypted votes
+- Calculate new probabilities using exponential market scoring
+- Determine payment amounts for trades
+
+#### Market Resolution (`reveal_result`, `reveal_probs`)
+- Expose final vote counts and probabilities
+- Enable market settlement and reward distribution
+
+#### Reward Claims (`claim_rewards`)
+- Calculate winnings based on winning outcome
+- Reset user positions after settlement
+
+### Client Utilities (`client/`)
+
+TypeScript helpers for:
+- Market creation and management
+- Share trading operations
+- Payment processing
+- Integration with Arcium's computation system
+
+## 📁 Project Structure
+
 ```
+arx_predict/
+├── programs/arx_predict/          # Main Solana program
+│   ├── src/
+│   │   ├── lib.rs                # Program entry point
+│   │   ├── states.rs             # Account data structures
+│   │   ├── contexts.rs           # Instruction contexts
+│   │   ├── events.rs             # Program events
+│   │   ├── constants.rs          # Program constants
+│   │   └── errors.rs             # Error definitions
+├── encrypted-ixs/                 # Confidential computing circuits
+│   └── src/lib.rs                # Arcis-based market logic
+├── client/                        # TypeScript client utilities
+│   ├── arcium_helper.ts          # Core program interactions
+│   ├── init_comp_defs.ts         # Computation definition setup
+│   └── utils.ts                  # Utility functions
+├── tests/                         # Integration tests
+└── migrations/                    # Deployment scripts
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Rust toolchain
+- Solana CLI
+- Node.js and Yarn
+- Arcium development environment
+
+### Installation
+```bash
+# Clone the repository
+git clone <repository-url>
+cd arx_predict
+
+# Install dependencies
+yarn install
+
+# Build the program
+cargo build
+
+# Run tests
+yarn test
+```
+
+### Environment Setup
+1. Configure Solana cluster connection
+2. Set up Arcium development environment
+3. Deploy computation definitions
+4. Initialize program accounts
+
+## 🔑 Key Concepts
+
+### Market Status
+- **Inactive**: Market not yet open for trading
+- **Active**: Market accepting trades and votes
+- **Settled**: Market resolved, rewards available
+
+### Share Trading
+- Shares represent proportional ownership of outcomes
+- Dynamic pricing based on current demand
+- Encrypted vote submission ensures privacy
+
+### Liquidity Parameter
+- Controls how sensitive market prices are to trades
+- Higher values create more stable pricing
+- Lower values allow for more dramatic price movements
+
+## 📈 Market Scoring Rule
+
+The system uses an exponential market scoring rule:
+
+```
+P(option_i) = exp(votes_i / liquidity) / Σ exp(votes_j / liquidity)
+Cost = liquidity × Σ exp(votes_j / liquidity)
+```
+
+This ensures:
+- Proper incentive alignment
+- Liquidity provision rewards
+- Market efficiency
+
+## 🔒 Privacy Features
+
+- **Encrypted Votes**: User choices remain hidden during trading
+- **Confidential State**: Market statistics are encrypted until revelation
+- **Zero-Knowledge Proofs**: Validates operations without revealing inputs
+- **Secure Settlement**: Final outcomes are computed confidentially
+
+## 🧪 Testing
+
+The test suite covers:
+- Market creation and management
+- Share trading operations
+- Payment processing
+- Market settlement and rewards
+- Integration with Arcium's confidential computing
+
+Run tests with:
+```bash
+arcium test
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## 📄 License
+
+ISC License - see LICENSE file for details
+---
+
+**Note**: This project is experimental and should not be used in production without thorough security audits and testing.

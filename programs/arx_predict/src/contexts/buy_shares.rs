@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{COMP_DEF_OFFSET_BUY_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, ErrorCode, MarketAccount, UserPosition, COMP_DEF_OFFSET_VOTE, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_BUY_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, ID, ID_CONST};
 
 #[queue_computation_accounts("buy_shares", payer)]
 #[derive(Accounts)]
@@ -81,6 +81,7 @@ impl<'info> BuyShares<'info> {
         computation_offset: u64,
         shares: u64,
     ) -> Result<()> {
+        require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let args = vec![
             Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("reveal_probs", payer)]
 #[derive(Accounts)]
@@ -64,12 +64,11 @@ impl<'info> RevealProbs<'info> {
         id: u32,
         computation_offset: u64,
     ) -> Result<()> {
+        require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         require!(
             self.payer.key() == self.market_acc.authority,
             ErrorCode::InvalidAuthority
         );
-
-        msg!("Revealing probs for poll with id {}", id);
 
         let args = vec![
             Argument::PlaintextU128(self.market_acc.nonce),

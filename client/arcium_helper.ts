@@ -83,15 +83,12 @@ export async function createUserPosition(
     })
     .rpc();
 
-  console.log(`User position created with signature`, userPositionSig);
-
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
     userPositionComputationOffset,
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize user position sig is `, finalizePollSig);
 }
 
 export async function getProbs(
@@ -119,7 +116,6 @@ export async function getProbs(
       ),
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
 
   const revealFinalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -127,17 +123,8 @@ export async function getProbs(
     program.programId,
     "confirmed"
   );
-  console.log(
-    `Reveal finalize for poll ${marketId} sig is `,
-    revealFinalizeSig
-  );
 
   const revealProbsEvent = await revealProbsEventPromise;
-  console.log(
-    `Decrypted probs for poll ${marketId} is `,
-    revealProbsEvent.share0,
-    revealProbsEvent.share1
-  );
   return revealProbsEvent;
 }
 
@@ -173,81 +160,17 @@ export async function createMarket(
       executingPool: getExecutingPoolAccAddress(program.programId),
       compDefAccount: getCompDefAccAddress(
         program.programId,
-        Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
+        Buffer.from(getCompDefAccOffset("init_market_stats")).readUInt32LE()
       ),
       mint: mint,
     })
     .rpc();
-
-  console.log(`Market ${marketId} created with signature`, pollSig);
 
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
     pollComputationOffset,
     program.programId,
     "confirmed"
-  );
-  console.log(`Finalize Market ${marketId} sig is `, finalizePollSig);
-}
-
-export async function vote(
-  provider: anchor.AnchorProvider,
-  program: Program<ArxPredict>,
-  arciumClusterPubkey: PublicKey,
-  cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
-  owner: PublicKey,
-  marketId: number,
-  vote: number,
-  amount: number,
-  voteEventPromise: any
-) {
-  console.log(`Voting for poll ${marketId}`);
-  const nonce = randomBytes(16);
-  const voteBigInt = BigInt(vote);
-  const plaintext = [voteBigInt];
-  const ciphertext = cipher.encrypt(plaintext, nonce);
-  const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
-  const queueVoteSig = await program.methods
-    .vote(
-      voteComputationOffset,
-      marketId,
-      Array.from(ciphertext[0]),
-      Array.from(mpcPublicKey),
-      new anchor.BN(deserializeLE(nonce).toString()),
-      new anchor.BN(amount)
-    )
-    .accountsPartial({
-      computationAccount: getComputationAccAddress(
-        program.programId,
-        voteComputationOffset
-      ),
-      clusterAccount: arciumClusterPubkey,
-      mxeAccount: getMXEAccAddress(program.programId),
-      mempoolAccount: getMempoolAccAddress(program.programId),
-      executingPool: getExecutingPoolAccAddress(program.programId),
-      compDefAccount: getCompDefAccAddress(
-        program.programId,
-        Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
-      ),
-      authority: owner,
-    })
-    .rpc({ commitment: "confirmed" });
-  console.log(`Queue vote for poll ${marketId} sig is `, queueVoteSig);
-
-  const finalizeSig = await awaitComputationFinalization(
-    provider as anchor.AnchorProvider,
-    voteComputationOffset,
-    program.programId,
-    "confirmed"
-  );
-  console.log(`Finalize vote for poll ${marketId} sig is `, finalizeSig);
-
-  const voteEvent = await voteEventPromise;
-  console.log(
-    `Vote casted for poll ${marketId} at timestamp `,
-    voteEvent.timestamp.toString(),
-    `with ${voteEvent.totalVotes} votes`
   );
 }
 
@@ -259,7 +182,6 @@ export async function sendPayment(
     marketId: number,
     amount: number
   ) {
-    console.log(`Sending payment of ${amount} to market ${marketId}`);
     const sig = await program.methods
       .sendPayment(marketId, new anchor.BN(amount))
       .accountsPartial({
@@ -268,7 +190,38 @@ export async function sendPayment(
         mint: mint,
       })
       .rpc({ commitment: "confirmed" });
-    console.log(`Payment sent with signature`, sig);
+}
+
+export async function withdrawPayment(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+  mint: anchor.web3.PublicKey,
+  marketId: number,
+  amount: number
+) {
+  const sig = await program.methods
+    .withdrawPayment(marketId, new anchor.BN(amount))
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .rpc({ commitment: "confirmed" });
+}
+
+export async function settleMarket(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  winner: number,
+  marketId: number,
+) {
+  const sig = await program.methods
+    .settleMarket(marketId, winner)
+    .accountsPartial({
+      payer: owner.publicKey,
+    })
+    .rpc({ commitment: "confirmed" });
 }
 
 export async function revealResult(
@@ -296,17 +249,12 @@ export async function revealResult(
           ),
         })
         .rpc({ commitment: "confirmed" });
-      console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
 
       const revealFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
         revealComputationOffset,
         program.programId,
         "confirmed"
-      );
-      console.log(
-        `Reveal finalize for poll ${marketId} sig is `,
-        revealFinalizeSig
       );
 
       const revealEvent = await revealResultEventPromise;
@@ -325,7 +273,6 @@ export async function buyShares(
   shares: number,
   buySharesEventPromise: any
 ) {
-  console.log(`Buying shares for poll ${marketId}`);
   const nonce = randomBytes(16);
   const voteBigInt = BigInt(vote);
   const plaintext = [voteBigInt];
@@ -356,7 +303,6 @@ export async function buyShares(
       authority: owner,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Queue buy shares for poll ${marketId} sig is `, queueBuySharesSig);
 
   const finalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -364,15 +310,8 @@ export async function buyShares(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize buy shares for poll ${marketId} sig is `, finalizeSig);
 
   const buySharesEvent = await buySharesEventPromise;
-  console.log(
-    `Buy shares for poll ${marketId} at timestamp `,
-    buySharesEvent.timestamp.toString(),
-    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`,
-    `status: ${buySharesEvent.status}`
-  );
 }
 
 export async function sellShares(
@@ -387,7 +326,6 @@ export async function sellShares(
   shares: number,
   sellSharesEventPromise: any
 ) {
-  console.log(`Selling shares for poll ${marketId}`);
   const nonce = randomBytes(16);
   const voteBigInt = BigInt(vote);
   const plaintext = [voteBigInt];
@@ -418,7 +356,6 @@ export async function sellShares(
       authority: owner,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Queue sell shares for poll ${marketId} sig is `, queueSellSharesSig);
 
   const finalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -426,13 +363,47 @@ export async function sellShares(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
 
   const sellSharesEvent = await sellSharesEventPromise;
-  console.log(
-    `Sell shares for poll ${marketId} at timestamp `,
-    sellSharesEvent.timestamp.toString(),
-    `with ${sellSharesEvent.amount} usd and ${sellSharesEvent.amountU64} usdc`,
-    `status: ${sellSharesEvent.status}`
+}
+
+export async function claimRewards(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  owner: PublicKey,
+  marketId: number,
+  claimRewardsEventPromise: any
+) {
+  const claimRewardsComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueClaimRewardsSig = await program.methods
+    .claimRewards(
+      claimRewardsComputationOffset,
+      marketId
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        claimRewardsComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("claim_rewards")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    claimRewardsComputationOffset,
+    program.programId,
+    "confirmed"
   );
+
+  const claimRewardsEvent = await claimRewardsEventPromise;
 }
