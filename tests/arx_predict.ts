@@ -30,6 +30,7 @@ import {
   sellShares,
   withdrawPayment,
   settleMarket,
+  claimRewards,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -256,6 +257,18 @@ describe("Voting", () => {
 
     // Settle market
     await settleMarket(program, owner, 0, POLL_IDS[0]);
+
+    // Claim rewards for each poll
+    // for (const POLL_ID of POLL_IDS) {
+      await claimRewards(
+        provider as anchor.AnchorProvider,
+        program,
+        arciumEnv.arciumClusterPubkey,
+        owner.publicKey,
+        POLL_IDS[0],
+        awaitEvent("claimRewardsEvent")
+      );
+    // }
 
 
     // Withdraw payments for each poll

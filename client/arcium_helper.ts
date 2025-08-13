@@ -456,6 +456,6 @@ export async function claimRewards(
   const claimRewardsEvent = await claimRewardsEventPromise;
   console.log(
     `Claim rewards for poll ${marketId} with amount `,
-    claimRewardsEvent.amount
+    claimRewardsEvent.amount.toString()
   );
 }
