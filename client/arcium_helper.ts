@@ -83,15 +83,12 @@ export async function createUserPosition(
     })
     .rpc();
 
-  console.log(`User position created with signature`, userPositionSig);
-
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
     userPositionComputationOffset,
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize user position sig is `, finalizePollSig);
 }
 
 export async function getProbs(
@@ -119,7 +116,6 @@ export async function getProbs(
       ),
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
 
   const revealFinalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -127,17 +123,8 @@ export async function getProbs(
     program.programId,
     "confirmed"
   );
-  console.log(
-    `Reveal finalize for poll ${marketId} sig is `,
-    revealFinalizeSig
-  );
 
   const revealProbsEvent = await revealProbsEventPromise;
-  console.log(
-    `Decrypted probs for poll ${marketId} is `,
-    revealProbsEvent.share0,
-    revealProbsEvent.share1
-  );
   return revealProbsEvent;
 }
 
@@ -179,15 +166,12 @@ export async function createMarket(
     })
     .rpc();
 
-  console.log(`Market ${marketId} created with signature`, pollSig);
-
   const finalizePollSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
     pollComputationOffset,
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize Market ${marketId} sig is `, finalizePollSig);
 }
 
 export async function sendPayment(
@@ -198,7 +182,6 @@ export async function sendPayment(
     marketId: number,
     amount: number
   ) {
-    console.log(`Sending payment of ${amount} to market ${marketId}`);
     const sig = await program.methods
       .sendPayment(marketId, new anchor.BN(amount))
       .accountsPartial({
@@ -207,7 +190,6 @@ export async function sendPayment(
         mint: mint,
       })
       .rpc({ commitment: "confirmed" });
-    console.log(`Payment sent with signature`, sig);
 }
 
 export async function withdrawPayment(
@@ -218,7 +200,6 @@ export async function withdrawPayment(
   marketId: number,
   amount: number
 ) {
-  console.log(`Withdrawing payment of ${amount} from market ${marketId}`);
   const sig = await program.methods
     .withdrawPayment(marketId, new anchor.BN(amount))
     .accountsPartial({
@@ -227,7 +208,6 @@ export async function withdrawPayment(
       mint: mint,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Payment withdrawn with signature`, sig);
 }
 
 export async function settleMarket(
@@ -236,14 +216,12 @@ export async function settleMarket(
   winner: number,
   marketId: number,
 ) {
-  console.log(`Settling market ${marketId} with winner ${winner}`);
   const sig = await program.methods
     .settleMarket(marketId, winner)
     .accountsPartial({
       payer: owner.publicKey,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Market settled with signature`, sig);
 }
 
 export async function revealResult(
@@ -271,17 +249,12 @@ export async function revealResult(
           ),
         })
         .rpc({ commitment: "confirmed" });
-      console.log(`Reveal queue for poll ${marketId} sig is `, revealQueueSig);
 
       const revealFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
         revealComputationOffset,
         program.programId,
         "confirmed"
-      );
-      console.log(
-        `Reveal finalize for poll ${marketId} sig is `,
-        revealFinalizeSig
       );
 
       const revealEvent = await revealResultEventPromise;
@@ -300,7 +273,6 @@ export async function buyShares(
   shares: number,
   buySharesEventPromise: any
 ) {
-  console.log(`Buying shares for poll ${marketId}`);
   const nonce = randomBytes(16);
   const voteBigInt = BigInt(vote);
   const plaintext = [voteBigInt];
@@ -331,7 +303,6 @@ export async function buyShares(
       authority: owner,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Queue buy shares for poll ${marketId} sig is `, queueBuySharesSig);
 
   const finalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -339,15 +310,8 @@ export async function buyShares(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize buy shares for poll ${marketId} sig is `, finalizeSig);
 
   const buySharesEvent = await buySharesEventPromise;
-  console.log(
-    `Buy shares for poll ${marketId} at timestamp `,
-    buySharesEvent.timestamp.toString(),
-    `with ${buySharesEvent.amount} usd and ${buySharesEvent.amountU64} usdc`,
-    `status: ${buySharesEvent.status}`
-  );
 }
 
 export async function sellShares(
@@ -362,7 +326,6 @@ export async function sellShares(
   shares: number,
   sellSharesEventPromise: any
 ) {
-  console.log(`Selling shares for poll ${marketId}`);
   const nonce = randomBytes(16);
   const voteBigInt = BigInt(vote);
   const plaintext = [voteBigInt];
@@ -393,7 +356,6 @@ export async function sellShares(
       authority: owner,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Queue sell shares for poll ${marketId} sig is `, queueSellSharesSig);
 
   const finalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -401,15 +363,8 @@ export async function sellShares(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
 
   const sellSharesEvent = await sellSharesEventPromise;
-  console.log(
-    `Sell shares for poll ${marketId} at timestamp `,
-    sellSharesEvent.timestamp.toString(),
-    `with ${sellSharesEvent.amount} usd and ${sellSharesEvent.amountU64} usdc`,
-    `status: ${sellSharesEvent.status}`
-  );
 }
 
 export async function claimRewards(
@@ -420,7 +375,6 @@ export async function claimRewards(
   marketId: number,
   claimRewardsEventPromise: any
 ) {
-  console.log(`Claiming rewards for poll ${marketId}`);
   const claimRewardsComputationOffset = new anchor.BN(randomBytes(8), "hex");
   const queueClaimRewardsSig = await program.methods
     .claimRewards(
@@ -443,7 +397,6 @@ export async function claimRewards(
       authority: owner,
     })
     .rpc({ commitment: "confirmed" });
-  console.log(`Queue claim rewards for poll ${marketId} sig is `, queueClaimRewardsSig);
 
   const finalizeSig = await awaitComputationFinalization(
     provider as anchor.AnchorProvider,
@@ -451,11 +404,6 @@ export async function claimRewards(
     program.programId,
     "confirmed"
   );
-  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
 
   const claimRewardsEvent = await claimRewardsEventPromise;
-  console.log(
-    `Claim rewards for poll ${marketId} with amount `,
-    claimRewardsEvent.amount.toString()
-  );
 }
