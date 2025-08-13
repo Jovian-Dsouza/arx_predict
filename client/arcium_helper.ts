@@ -411,3 +411,51 @@ export async function sellShares(
     `status: ${sellSharesEvent.status}`
   );
 }
+
+export async function claimRewards(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  owner: PublicKey,
+  marketId: number,
+  claimRewardsEventPromise: any
+) {
+  console.log(`Claiming rewards for poll ${marketId}`);
+  const claimRewardsComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const queueClaimRewardsSig = await program.methods
+    .claimRewards(
+      claimRewardsComputationOffset,
+      marketId
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        claimRewardsComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("claim_rewards")).readUInt32LE()
+      ),
+      authority: owner,
+    })
+    .rpc({ commitment: "confirmed" });
+  console.log(`Queue claim rewards for poll ${marketId} sig is `, queueClaimRewardsSig);
+
+  const finalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    claimRewardsComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  console.log(`Finalize sell shares for poll ${marketId} sig is `, finalizeSig);
+
+  const claimRewardsEvent = await claimRewardsEventPromise;
+  console.log(
+    `Claim rewards for poll ${marketId} with amount `,
+    claimRewardsEvent.amount
+  );
+}

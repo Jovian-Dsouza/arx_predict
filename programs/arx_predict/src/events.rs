@@ -32,3 +32,8 @@ pub struct SellSharesEvent {
     pub timestamp: i64,
     pub amount: u64,
 }
+
+#[event]
+pub struct ClaimRewardsEvent {
+    pub amount: u64,
+}

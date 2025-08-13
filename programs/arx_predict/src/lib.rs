@@ -212,6 +212,28 @@ pub mod arx_predict {
         Ok(())
     }
 
+    #[arcium_callback(encrypted_ix = "claim_rewards")]
+    pub fn claim_rewards_callback(
+        ctx: Context<ClaimRewardsCallback>,
+        output: ComputationOutputs<ClaimRewardsOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(ClaimRewardsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
+        };
+        let amount = o.field_1;
+        ctx.accounts.user_position_acc.balance += amount;
+        ctx.accounts.user_position_acc.shares = o.field_0.ciphertexts;  
+        ctx.accounts.user_position_acc.nonce = o.field_0.nonce;
+        
+        
+        emit!(ClaimRewardsEvent {
+            amount: amount,
+        });
+
+        Ok(())
+    }
+
     pub fn create_market(
         ctx: Context<CreateMarket>,
         computation_offset: u64,
@@ -319,6 +341,14 @@ pub mod arx_predict {
         winner: u8,
     ) -> Result<()> {
         ctx.accounts.settle_market(id, winner)
+    }
+
+    pub fn claim_rewards(
+        ctx: Context<ClaimRewards>,
+        computation_offset: u64,
+        _id: u32,
+    ) -> Result<()> {
+        ctx.accounts.claim_rewards(computation_offset)
     }
 
 }
