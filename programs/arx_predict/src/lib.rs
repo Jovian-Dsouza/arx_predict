@@ -18,41 +18,70 @@ declare_id!("HUB6LrbuCgDeeAFK7R1jiuqAvzqDLussz3wqkQ5rWSvc");
 
 #[arcium_program]
 pub mod arx_predict {
+    use arcium_client::idl::arcium::types::{CircuitSource, OffChainCircuitSource};
+
     use super::*;
 
     // INIT COMP DEF
     pub fn init_market_stats_comp_def(ctx: Context<InitMarketStatsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(
+            ctx.accounts, 
+            true, 
+            0, 
+            Some(CircuitSource::OffChain(OffChainCircuitSource {
+                source: INIT_MARKET_STATS_CIRCUIT.to_string(),
+                hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+            })),
+            None
+        )?;
         Ok(())
     }
 
     pub fn init_user_position_comp_def(ctx: Context<InitUserPositionCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: INIT_USER_POSITION_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
     pub fn init_buy_shares_comp_def(ctx: Context<InitBuySharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: BUY_SHARES_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
     pub fn init_sell_shares_comp_def(ctx: Context<InitSellSharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: SELL_SHARES_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: REVEAL_RESULT_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
     pub fn init_reveal_probs_comp_def(ctx: Context<InitRevealProbsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: REVEAL_PROBS_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
     pub fn init_claim_rewards_comp_def(ctx: Context<InitClaimRewardsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
+            source: CLAIM_REWARDS_CIRCUIT.to_string(),
+            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
+        })), None)?;
         Ok(())
     }
 
