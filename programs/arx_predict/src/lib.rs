@@ -73,9 +73,9 @@ pub mod arx_predict {
         ctx.accounts.market_acc.cost = o.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
 
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp as u64;
-        ctx.accounts.market_acc.updated_at = current_timestamp;
+        // let clock = Clock::get()?;
+        // let current_timestamp = clock.unix_timestamp as u64;
+        ctx.accounts.market_acc.updated_at = 0;
 
         Ok(())
     }

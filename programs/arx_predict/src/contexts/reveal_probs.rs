@@ -79,8 +79,8 @@ impl<'info> RevealProbs<'info> {
         );
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
         require!(
-            current_timestamp - self.market_acc.updated_at < MARKET_REVEAL_PROBS_TIME,
-            ErrorCode::MarketExpired
+            current_timestamp - self.market_acc.updated_at > MARKET_REVEAL_PROBS_TIME,
+            ErrorCode::MarketProbsRevealRateLimit
         );
 
         let args = vec![

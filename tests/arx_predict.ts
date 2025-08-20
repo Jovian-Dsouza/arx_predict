@@ -220,22 +220,22 @@ describe("Voting", () => {
       logSuccess(`Market ${POLL_ID} created successfully`);
     }
 
-    logSection("Probability Revelation");
-    logStep(`Revealing initial probabilities for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
+    // logSection("Probability Revelation");
+    // logStep(`Revealing initial probabilities for ${POLL_IDS.length} market(s)`);
+    // for (let i = 0; i < POLL_IDS.length; i++) {
+    //   const POLL_ID = POLL_IDS[i];
+    //   logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
       
-      const probs = await getProbs(
-        provider as anchor.AnchorProvider,
-        program,
-        POLL_ID,
-        arciumEnv.arciumClusterPubkey,
-        awaitEvent("revealProbsEvent")
-      );
-      logSuccess(`Market ${POLL_ID} probabilities revealed`);
-      logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
-    }
+    //   const probs = await getProbs(
+    //     provider as anchor.AnchorProvider,
+    //     program,
+    //     POLL_ID,
+    //     arciumEnv.arciumClusterPubkey,
+    //     awaitEvent("revealProbsEvent")
+    //   );
+    //   logSuccess(`Market ${POLL_ID} probabilities revealed`);
+    //   logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
+    // }
 
     logSection("User Position Creation");
     logStep(`Creating user positions for ${POLL_IDS.length} market(s)`);
@@ -290,21 +290,21 @@ describe("Voting", () => {
       logInfo(`   Vote choice: Option 0 (${options[0]})`);
     }
     
-    logStep(`Revealing updated probabilities after voting for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
+    // logStep(`Revealing updated probabilities after voting for ${POLL_IDS.length} market(s)`);
+    // for (let i = 0; i < POLL_IDS.length; i++) {
+    //   const POLL_ID = POLL_IDS[i];
+    //   logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
       
-      const probs = await getProbs(
-        provider as anchor.AnchorProvider,
-        program,
-        POLL_ID,
-        arciumEnv.arciumClusterPubkey,
-        awaitEvent("revealProbsEvent")
-      );
-      logSuccess(`Updated probabilities revealed for market ${POLL_ID}`);
-      logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
-    }
+    //   const probs = await getProbs(
+    //     provider as anchor.AnchorProvider,
+    //     program,
+    //     POLL_ID,
+    //     arciumEnv.arciumClusterPubkey,
+    //     awaitEvent("revealProbsEvent")
+    //   );
+    //   logSuccess(`Updated probabilities revealed for market ${POLL_ID}`);
+    //   logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
+    // }
 
     logSection("Share Trading");
     logStep(`Selling shares for ${POLL_IDS.length} market(s)`);
