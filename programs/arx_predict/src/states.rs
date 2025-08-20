@@ -16,10 +16,12 @@ pub struct MarketAccount {
     pub question: String,
     #[max_len(MAX_OPTION_LENGTH)]
     pub options: [String; MAX_OPTIONS],
+    pub probs_revealed: [f64; MAX_OPTIONS],
     pub updated_at: u64,
     pub expiry_at: u64,
     pub winning_outcome: u8,
     pub status: MarketStatus,
+    pub tvl: u64,
 }
 
 #[account]

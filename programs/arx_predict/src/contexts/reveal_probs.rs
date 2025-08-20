@@ -1,7 +1,15 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
+use crate::{
+    constants::{
+        COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH,
+        MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET,
+    },
+    states::MarketStatus,
+    ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS,
+};
 
 #[queue_computation_accounts("reveal_probs", payer)]
 #[derive(Accounts)]
@@ -52,6 +60,7 @@ pub struct RevealProbs<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
+        mut,
         seeds = [b"market", id.to_le_bytes().as_ref()],
         bump = market_acc.bump
     )]
@@ -59,12 +68,11 @@ pub struct RevealProbs<'info> {
 }
 
 impl<'info> RevealProbs<'info> {
-    pub fn reveal_probs(
-        &self,
-        id: u32,
-        computation_offset: u64,
-    ) -> Result<()> {
-        require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
+    pub fn reveal_probs(&self, id: u32, computation_offset: u64) -> Result<()> {
+        require!(
+            self.market_acc.status == MarketStatus::Active,
+            ErrorCode::MarketActive
+        );
         require!(
             self.payer.key() == self.market_acc.authority,
             ErrorCode::InvalidAuthority
@@ -75,11 +83,22 @@ impl<'info> RevealProbs<'info> {
             Argument::Account(
                 self.market_acc.key(),
                 MARKET_ACCOUNT_VOTE_STATS_OFFSET,
-                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH + MARKET_ACCOUNT_COST_LENGTH,
+                MARKET_ACCOUNT_VOTE_STATS_LENGTH
+                    + MARKET_ACCOUNT_PROB_LENGTH
+                    + MARKET_ACCOUNT_COST_LENGTH,
             ),
         ];
 
-        queue_computation(self, computation_offset, args, vec![], None)?;
+        queue_computation(
+            self,
+            computation_offset,
+            args,
+            vec![CallbackAccount {
+                pubkey: self.market_acc.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
         Ok(())
     }
-} 
+}

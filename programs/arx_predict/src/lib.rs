@@ -125,7 +125,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-       
+        ctx.accounts.market_acc.tvl += amount;
         
         emit!(BuySharesEvent {
             status: 1,
@@ -168,7 +168,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.nonce = o.field_0.nonce;
         ctx.accounts.user_position_acc.shares = o.field_1.ciphertexts;  
         ctx.accounts.user_position_acc.nonce = o.field_1.nonce;
-       
+        ctx.accounts.market_acc.tvl -= amount;
         
         emit!(SellSharesEvent {
             status: 1,
@@ -203,6 +203,8 @@ pub mod arx_predict {
             ComputationOutputs::Success(RevealProbsOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
+
+        ctx.accounts.market_acc.probs_revealed = o;
 
         emit!(RevealProbsEvent { 
             share0: o[0] as f64,
