@@ -24,4 +24,6 @@ pub enum ErrorCode {
     InsufficientBalance,
     #[msg("Market not settled")]
     MarketNotSettled,
+    #[msg("Market expired")]
+    MarketExpired,
 }

@@ -19,3 +19,5 @@ pub const MARKET_ACCOUNT_COST_LENGTH: u32 = 32;
 
 pub const USER_POSITION_SHARES_OFFSET: u32 = 8 + 1 + 16; // 8 bytes (discriminator) + 1 byte (bump) + 16 bytes (nonce)
 pub const USER_POSITION_SHARES_LENGTH: u32 = 32 * MAX_OPTIONS as u32;
+
+pub const MARKET_REVEAL_PROBS_TIME: u64 = 60;

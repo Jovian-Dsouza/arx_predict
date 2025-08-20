@@ -5,7 +5,7 @@ use arcium_client::idl::arcium::types::CallbackAccount;
 use crate::{
     constants::{
         COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH,
-        MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET,
+        MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, MARKET_REVEAL_PROBS_TIME,
     },
     states::MarketStatus,
     ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS,
@@ -76,6 +76,11 @@ impl<'info> RevealProbs<'info> {
         require!(
             self.payer.key() == self.market_acc.authority,
             ErrorCode::InvalidAuthority
+        );
+        let current_timestamp = Clock::get()?.unix_timestamp as u64;
+        require!(
+            current_timestamp - self.market_acc.updated_at < MARKET_REVEAL_PROBS_TIME,
+            ErrorCode::MarketExpired
         );
 
         let args = vec![
