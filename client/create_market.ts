@@ -23,82 +23,37 @@ import { expect } from "chai";
 import { createTokenMint, getRequiredATA, readKpJson } from "../client/utils";
 import {
 //   getMXEPublicKeyWithRetry,
-  getProbs,
-  createUserPosition,
+  getProbs as getProbsHelper,
+  createUserPosition as createUserPositionHelper,
   createMarket as createMarketHelper,
-  sendPayment,
-  revealResult,
-  buyShares,
-  sellShares,
-  withdrawPayment,
-  settleMarket,
-  claimRewards,
+  sendPayment as sendPaymentHelper,
+  revealResult as revealResultHelper,
+  buyShares as buySharesHelper,
+  sellShares as sellSharesHelper,
+  withdrawPayment as withdrawPaymentHelper,
+  settleMarket as settleMarketHelper,
+  claimRewards as claimRewardsHelper,
+  getMXEPublicKeyWithRetry,
 } from "../client/arcium_helper";
-import {
-  initUserPositionCompDef,
-  initRevealResultCompDef,
-  initRevealProbsCompDef,
-  initMarketStatsCompDef,
-  initBuySharesCompDef,
-  initSellSharesCompDef,
-  initClaimRewardsCompDef,
-} from "../client/init_comp_defs";
-import { randomBytes } from "crypto";
-import { Connection, PublicKey } from "@solana/web3.js";
-// @ts-ignore
-import * as IDL from "../target/idl/arx_predict.json";
 
-const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-const wallet = readKpJson(`${os.homedir()}/.config/solana/id.json`);
-const anchorProvider = new anchor.AnchorProvider(
-  connection,
-  new anchor.Wallet(wallet),
-  { commitment: "confirmed" }
-);
-const program = new Program(IDL as any, anchorProvider) as Program<ArxPredict>;
-const clusterOffset = 1116522165;
-const clusterAccount = getClusterAccAddress(clusterOffset);
-const mint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+import { initCompDefs, setup } from "./setup";
 
-export async function getMXEPublicKeyWithRetry(
-    provider: anchor.AnchorProvider,
-    programId: PublicKey,
-    maxRetries: number = 10,
-    retryDelayMs: number = 500
-  ): Promise<Uint8Array> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const mxePublicKey = await getMXEPublicKey(provider, programId);
-        if (mxePublicKey) {
-          return mxePublicKey;
-        }
-      } catch (error) {
-        console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
-      }
-  
-      if (attempt < maxRetries) {
-        console.log(
-          `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
-        );
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-      }
-    }
-  
-    throw new Error(
-      `Failed to fetch MXE public key after ${maxRetries} attempts`
-    );
-  }
 
 async function createMarket() {
-    const mxePublicKey = await getMXEPublicKeyWithRetry(
-        anchorProvider,
-        program.programId
-    );
+    const setupData = await setup();
+    const {
+        connection,
+        wallet,
+        provider,
+        program,
+        clusterAccount,
+        mint,
+        mxePublicKey,
+    } = setupData;
+    
+    // await initCompDefs(setupData);
 
-    const privateKey = x25519.utils.randomPrivateKey();
-    const publicKey = x25519.getPublicKey(privateKey);
-    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
-    const cipher = new RescueCipher(sharedSecret);
+    
 
     const marketId = 1;
     const liquidityParameter = 10;
@@ -106,26 +61,120 @@ async function createMarket() {
     const question = `$SOL to 500?`;
 
     
-    await createMarketHelper(
-        anchorProvider,
+    // await createMarketHelper(
+    //     provider,
+    //     program,
+    //     clusterAccount,
+    //     marketId,
+    //     question,
+    //     options,
+    //     liquidityParameter,
+    //     mint
+    //   );
+}
+
+async function createUserPosition() {
+    const setupData = await setup();
+    const {
+        provider,
         program,
         clusterAccount,
-        marketId,
-        question,
-        options,
-        liquidityParameter,
-        mint
+    } = setupData;
+
+    const marketId = 1;
+
+    await createUserPositionHelper(
+        provider as anchor.AnchorProvider,
+        program,
+        clusterAccount,
+        marketId
       );
 }
 
-async function main() {
+async function sendPayment() {
+    const setupData = await setup();
+    const {
+        program,
+        provider,
+        wallet,
+        mint,
+    } = setupData;
+    const marketId = 1;
+    const paymentAmount = 5 * 1e6;
+    const ata = await getRequiredATA(provider, wallet, mint);
+    console.log("ATA: ", ata.toBase58());
+    const sig = await sendPaymentHelper(program, wallet, ata, mint, marketId, paymentAmount);
+    console.log("Payment sent: ", sig);
+}
 
-    console.log("wallet: ", wallet.publicKey.toBase58());
-    console.log("program: ", program.programId.toBase58());
-    console.log("clusterAccount: ", clusterAccount.toBase58());
-    console.log("mint: ", mint.toBase58());
-    
+
+
+async function buyShares() {
+    const setupData = await setup();
+    const {
+        program,
+        provider,
+        clusterAccount,
+        cipher,
+        cipherPublicKey,
+        wallet,
+        mint,
+        awaitEvent,
+    } = setupData;
+
+    const marketId = 1;
+    const sharesToBuy = 0.0000000001;
+    const vote = 0;
+    const ata = await getRequiredATA(provider, wallet, mint);
+
+    const sig = await buySharesHelper(
+        provider as anchor.AnchorProvider,
+        program,
+        clusterAccount,
+        cipher,
+        cipherPublicKey,
+        wallet.publicKey,
+        marketId,
+        vote,
+        sharesToBuy,
+        awaitEvent("buySharesEvent")
+    );
+    console.log("Shares bought: ", sig);
+}
+
+async function revealProbs() {
+    const setupData = await setup();
+    const {
+        program,
+        provider,
+        clusterAccount,
+        awaitEvent,
+    } = setupData;
+
+    const marketId = 1;
+    const probs = await getProbsHelper(
+        provider as anchor.AnchorProvider,
+        program,
+        marketId,
+        clusterAccount,
+        awaitEvent("revealProbsEvent")
+    );
+    console.log("Probs: ", probs);
+}
+
+async function initDefs() {
+    const setupData = await setup();
+    await initCompDefs(setupData);
+    console.log("Defs initialized");
+}
+
+async function main() {
+    // await initDefs();
     // await createMarket();
+    // await createUserPosition();
+    // await sendPayment();
+    await buyShares();
+    // await revealProbs();
 
 }
 

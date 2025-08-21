@@ -190,6 +190,7 @@ export async function sendPayment(
         mint: mint,
       })
       .rpc({ commitment: "confirmed" });
+    return sig;
 }
 
 export async function withdrawPayment(
@@ -266,7 +267,7 @@ export async function buyShares(
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  mpcPublicKey: Uint8Array,
   owner: PublicKey,
   marketId: number,
   vote: number,
@@ -312,6 +313,8 @@ export async function buyShares(
   );
 
   const buySharesEvent = await buySharesEventPromise;
+  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesEvent.amount.toString()}`);
+  return finalizeSig;
 }
 
 export async function sellShares(
@@ -319,7 +322,7 @@ export async function sellShares(
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  mpcPublicKey: Uint8Array,
   owner: PublicKey,
   marketId: number,
   vote: number,
