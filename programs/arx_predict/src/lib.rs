@@ -14,7 +14,7 @@ use errors::ErrorCode;
 use contexts::*;
 use events::*;
 
-declare_id!("HUB6LrbuCgDeeAFK7R1jiuqAvzqDLussz3wqkQ5rWSvc");
+declare_id!("Gv6eSSQko92X79aMNzwp4LuFZ1MAf9hUCVxSDmwJTnip");
 
 #[arcium_program]
 pub mod arx_predict {
