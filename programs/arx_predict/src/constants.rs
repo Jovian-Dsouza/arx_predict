@@ -22,10 +22,10 @@ pub const USER_POSITION_SHARES_LENGTH: u32 = 32 * MAX_OPTIONS as u32;
 
 pub const MARKET_REVEAL_PROBS_TIME: u64 = 60;
 
-pub const INIT_MARKET_STATS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/init_market_stats_testnet.arcis";
-pub const INIT_USER_POSITION_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/init_user_position_testnet.arcis";
-pub const BUY_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/buy_shares_testnet.arcis";
-pub const CLAIM_REWARDS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/claim_rewards_testnet.arcis";
-pub const REVEAL_PROBS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/reveal_probs_testnet.arcis";
-pub const REVEAL_RESULT_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/reveal_result_testnet.arcis";
-pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeiexw3zx4233jwk6633hileo2qbc4rtpq7z75lr2wtzy523cdu7chq/sell_shares_testnet.arcis";
+pub const INIT_MARKET_STATS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/init_market_stats_testnet.arcis";
+pub const INIT_USER_POSITION_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/init_user_position_testnet.arcis";
+pub const BUY_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/buy_shares_testnet.arcis";
+pub const CLAIM_REWARDS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/claim_rewards_testnet.arcis";
+pub const REVEAL_PROBS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_probs_testnet.arcis";
+pub const REVEAL_RESULT_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_result_testnet.arcis";
+pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/sell_shares_testnet.arcis";
