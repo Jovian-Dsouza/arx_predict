@@ -7,11 +7,13 @@ mod errors;
 mod contexts;
 mod events;
 mod macros;
+mod utils;
 use states::*;
 use constants::*;
 use errors::ErrorCode;
 use contexts::*;
 use events::*;
+use utils::*;
 
 declare_id!("7ox4o9VrNnducKJgmBFYu2yrLoYgw7dkZKH4Qjz5qUQg");
 
@@ -108,8 +110,7 @@ pub mod arx_predict {
             ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
-        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
-
+        let amount = convert_f64_to_token_amount(o.field_2, ctx.accounts.market_acc.mint_decimals)?;
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
@@ -167,7 +168,8 @@ pub mod arx_predict {
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
-        let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
+        
+        let amount = convert_f64_to_token_amount(-o.field_2, ctx.accounts.market_acc.mint_decimals)?;
         ctx.accounts.user_position_acc.balance += amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();

@@ -95,8 +95,10 @@ impl<'info> CreateMarket<'info> {
         bump: u8,
     ) -> Result<()> {
         // Validations
-        require!(liquidity_parameter > 0, ErrorCode::InvalidLiquidityParameter);
+        require!(liquidity_parameter >= 10, ErrorCode::InvalidLiquidityParameter);
         require!(self.market_acc.status == MarketStatus::Inactive, ErrorCode::MarketInactive);
+        require!(options.len() == MAX_OPTIONS, ErrorCode::InvalidNumOptions);
+        require!(!question.is_empty(), ErrorCode::InvalidQuestion);
         for option in &options {
             require!(!option.is_empty(), ErrorCode::EmptyOption);
         }
@@ -114,6 +116,8 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.status = MarketStatus::Active;
         self.market_acc.tvl = 0;
         self.market_acc.probs_revealed = [0.0; MAX_OPTIONS];
+        self.market_acc.mint = self.mint.key();
+        self.market_acc.mint_decimals = self.mint.decimals;
 
         //TODO: Market maker pays b*ln(MAX_OPTIONS)
 

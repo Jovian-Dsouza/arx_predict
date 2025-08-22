@@ -206,9 +206,9 @@ mod circuits {
 
         let mut reward: u64 = 0;
         if winning_outcome == 0 {
-            reward = user_position.option0 * (1000000u64);
+            reward = (user_position.option0 * (1000000u64)) / SHARES_PER_UNIT; //num shares * 1 token * 1e6 / shares_per_unit
         } else if winning_outcome == 1 {
-            reward = user_position.option1 * (1000000u64);
+            reward = (user_position.option1 * (1000000u64)) / SHARES_PER_UNIT; //num shares * 1 token * 1e6 / shares_per_unit
         }
         user_position.option0 = 0;
         user_position.option1 = 0;
