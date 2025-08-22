@@ -199,10 +199,10 @@ describe("Voting", () => {
 
     const options = ["Yes", "No"];
     const question = `$SOL to 500?`;
-    
+    const liquidityParameter = 10;
     logStep(`Creating ${POLL_IDS.length} market(s)`, `Question: "${question}"`);
     logInfo(`   Options: ${options.join(', ')}`);
-    logInfo(`   Liquidity parameter: 10`);
+    logInfo(`   Liquidity parameter: ${liquidityParameter}`);
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       logProgress(i + 1, POLL_IDS.length, `Creating market ${POLL_ID}`);
@@ -214,7 +214,7 @@ describe("Voting", () => {
         POLL_ID,
         question,
         options,
-        10, // liquidity parameter
+        liquidityParameter,
         mint
       );
       logSuccess(`Market ${POLL_ID} created successfully`);

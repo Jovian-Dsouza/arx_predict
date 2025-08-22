@@ -172,6 +172,7 @@ export async function createMarket(
     program.programId,
     "confirmed"
   );
+  return finalizePollSig;
 }
 
 export async function sendPayment(
@@ -313,7 +314,8 @@ export async function buyShares(
   );
 
   const buySharesEvent = await buySharesEventPromise;
-  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesEvent.amount.toString()}`);
+  const buySharesAmountUsdc = buySharesEvent.amount / 1e6;
+  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}`);
   return finalizeSig;
 }
 
@@ -368,6 +370,9 @@ export async function sellShares(
   );
 
   const sellSharesEvent = await sellSharesEventPromise;
+  const sellSharesAmountUsdc = sellSharesEvent.amount / 1e6;
+  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}`);
+  return finalizeSig;
 }
 
 export async function claimRewards(

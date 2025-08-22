@@ -14,6 +14,7 @@ import {
   getMXEAccAddress,
   getMXEPublicKey,
   RescueCipher,
+  uploadCircuit,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -151,20 +152,86 @@ export async function initCompDefs(setupData: SetupData) {
     initUserPositionSig
   );
 
-  const initRevealResultSig = await initRevealResultCompDef(provider as anchor.AnchorProvider, program, wallet, false);
-  console.log("Reveal result computation definition initialized: ", initRevealResultSig);
+  const initRevealResultSig = await initRevealResultCompDef(
+    provider as anchor.AnchorProvider,
+    program,
+    wallet,
+    false
+  );
+  console.log(
+    "Reveal result computation definition initialized: ",
+    initRevealResultSig
+  );
 
-  const initRevealProbsSig = await initRevealProbsCompDef(provider as anchor.AnchorProvider, program, wallet, false);
-  console.log("Reveal probs computation definition initialized: ", initRevealProbsSig);
+  const initRevealProbsSig = await initRevealProbsCompDef(
+    provider as anchor.AnchorProvider,
+    program,
+    wallet,
+    false
+  );
+  console.log(
+    "Reveal probs computation definition initialized: ",
+    initRevealProbsSig
+  );
 
-  const initBuySharesSig = await initBuySharesCompDef(provider as anchor.AnchorProvider, program, wallet, false);
-  console.log("Buy shares computation definition initialized: ", initBuySharesSig);
+  const initBuySharesSig = await initBuySharesCompDef(
+    provider as anchor.AnchorProvider,
+    program,
+    wallet,
+    false
+  );
+  console.log(
+    "Buy shares computation definition initialized: ",
+    initBuySharesSig
+  );
 
-  const initSellSharesSig = await initSellSharesCompDef(provider as anchor.AnchorProvider, program, wallet, false);
-  console.log("Sell shares computation definition initialized: ", initSellSharesSig);
+  const initSellSharesSig = await initSellSharesCompDef(
+    provider as anchor.AnchorProvider,
+    program,
+    wallet,
+    false
+  );
+  console.log(
+    "Sell shares computation definition initialized: ",
+    initSellSharesSig
+  );
 
-  const initClaimRewardsSig = await initClaimRewardsCompDef(provider as anchor.AnchorProvider, program, wallet, false);
-  console.log("Claim rewards computation definition initialized: ", initClaimRewardsSig);
+  const initClaimRewardsSig = await initClaimRewardsCompDef(
+    provider as anchor.AnchorProvider,
+    program,
+    wallet,
+    false
+  );
+  console.log(
+    "Claim rewards computation definition initialized: ",
+    initClaimRewardsSig
+  );
 
   // logSuccess("User position computation definition initialized");
+}
+
+async function uploadCircutHelper(setupData: SetupData, circuitName: string) {
+  const { provider, program } = setupData;
+
+  console.log("Uploading circuit: ", circuitName);
+
+  const rawCircuit = fs.readFileSync(`build/${circuitName}_testnet.arcis`);
+
+  await uploadCircuit(
+    provider as anchor.AnchorProvider,
+    circuitName,
+    program.programId,
+    rawCircuit,
+    true
+  );
+}
+
+export async function uploadCompDefsCircuits(setupData: SetupData) {
+  await uploadCircutHelper(setupData, "init_market_stats");
+  await uploadCircutHelper(setupData, "init_user_position");
+  await uploadCircutHelper(setupData, "reveal_result");
+  await uploadCircutHelper(setupData, "reveal_probs");
+  await uploadCircutHelper(setupData, "buy_shares");
+  await uploadCircutHelper(setupData, "sell_shares");
+  await uploadCircutHelper(setupData, "claim_rewards");
 }
