@@ -1,14 +1,13 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::idl::arcium::types::CallbackAccount;
 
 mod states;
 mod constants;
 mod errors;
 mod contexts;
 mod events;
+mod macros;
 use states::*;
-
 use constants::*;
 use errors::ErrorCode;
 use contexts::*;
@@ -18,70 +17,41 @@ declare_id!("7ox4o9VrNnducKJgmBFYu2yrLoYgw7dkZKH4Qjz5qUQg");
 
 #[arcium_program]
 pub mod arx_predict {
-    use arcium_client::idl::arcium::types::{CircuitSource, OffChainCircuitSource};
-
     use super::*;
 
     // INIT COMP DEF
     pub fn init_market_stats_comp_def(ctx: Context<InitMarketStatsCompDef>) -> Result<()> {
-        init_comp_def(
-            ctx.accounts, 
-            true, 
-            0, 
-            Some(CircuitSource::OffChain(OffChainCircuitSource {
-                source: INIT_MARKET_STATS_CIRCUIT.to_string(),
-                hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-            })),
-            None
-        )?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(INIT_MARKET_STATS_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_user_position_comp_def(ctx: Context<InitUserPositionCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: INIT_USER_POSITION_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(INIT_USER_POSITION_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_buy_shares_comp_def(ctx: Context<InitBuySharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: BUY_SHARES_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(BUY_SHARES_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_sell_shares_comp_def(ctx: Context<InitSellSharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: SELL_SHARES_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(SELL_SHARES_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: REVEAL_RESULT_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_RESULT_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_reveal_probs_comp_def(ctx: Context<InitRevealProbsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: REVEAL_PROBS_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_PROBS_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_claim_rewards_comp_def(ctx: Context<InitClaimRewardsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: CLAIM_REWARDS_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(CLAIM_REWARDS_CIRCUIT), None)?;
         Ok(())
     }
 
@@ -101,9 +71,6 @@ pub mod arx_predict {
         ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.cost = o.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
-
-        // let clock = Clock::get()?;
-        // let current_timestamp = clock.unix_timestamp as u64;
         ctx.accounts.market_acc.updated_at = 0;
 
         Ok(())
