@@ -535,27 +535,27 @@ describe("Voting", () => {
       logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
     }
 
-    logSection("Result Revelation");
-    logStep(`Revealing results for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      const expectedOutcome = voteOutcomes[i]; 
-      logProgress(i + 1, POLL_IDS.length, `Revealing result for market ${POLL_ID}`);
+    // logSection("Result Revelation");
+    // logStep(`Revealing results for ${POLL_IDS.length} market(s)`);
+    // for (let i = 0; i < POLL_IDS.length; i++) {
+    //   const POLL_ID = POLL_IDS[i];
+    //   const expectedOutcome = voteOutcomes[i]; 
+    //   logProgress(i + 1, POLL_IDS.length, `Revealing result for market ${POLL_ID}`);
 
-      // Wait for RevealResultEvent during result revelation
-      globalEventListener.markExpected("revealResultEvent", POLL_ID); // Mark as expected
-      const revealResultEventPromise = waitForEvent("revealResultEvent");
+    //   // Wait for RevealResultEvent during result revelation
+    //   globalEventListener.markExpected("revealResultEvent", POLL_ID); // Mark as expected
+    //   const revealResultEventPromise = waitForEvent("revealResultEvent");
       
-      const revealEvent = await revealResult(
-        provider as anchor.AnchorProvider,
-        program,
-        POLL_ID,
-        arciumEnv.arciumClusterPubkey,
-        revealResultEventPromise
-      );
-      logSuccess(`Market ${POLL_ID} result: ${revealEvent.output} (expected: ${expectedOutcome})`);
-      expect(revealEvent.output).to.equal(expectedOutcome);
-    }
+    //   const revealEvent = await revealResult(
+    //     provider as anchor.AnchorProvider,
+    //     program,
+    //     POLL_ID,
+    //     arciumEnv.arciumClusterPubkey,
+    //     revealResultEventPromise
+    //   );
+    //   logSuccess(`Market ${POLL_ID} result: ${revealEvent.output} (expected: ${expectedOutcome})`);
+    //   expect(revealEvent.output).to.equal(expectedOutcome);
+    // }
 
     logSection("Market Settlement & Rewards");
     logStep("Settling markets and claiming rewards");

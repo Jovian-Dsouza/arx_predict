@@ -323,13 +323,13 @@ pub mod arx_predict {
         )
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        computation_offset: u64,
-        id: u32,
-    ) -> Result<()> {
-        ctx.accounts.reveal_result(id, computation_offset)
-    }
+    // pub fn reveal_result(
+    //     ctx: Context<RevealVotingResult>,
+    //     computation_offset: u64,
+    //     id: u32,
+    // ) -> Result<()> {
+    //     ctx.accounts.reveal_result(id, computation_offset)
+    // }
 
     pub fn reveal_probs(
         ctx: Context<RevealProbs>,
