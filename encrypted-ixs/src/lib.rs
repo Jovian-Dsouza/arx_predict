@@ -4,6 +4,9 @@ use arcis_imports::*;
 mod circuits {
     use arcis_imports::*;
 
+    const SHARES_PER_UNIT: u64 = 1000000;
+    const SHARES_PER_UNIT_INV_F64: f64 = 1.0f64 / SHARES_PER_UNIT as f64;
+    
     pub struct VoteStats {
         option0: u64,
         option1: u64,
@@ -150,9 +153,9 @@ mod circuits {
         // let exp1 = (vote_stats.option1 as f64 / *liquidity_parameter as f64).exp();
         // let sum_exp = exp0 + exp1;
 
-        let liquidity_inverse = 1.0 / *liquidity_parameter as f64;
-        let x0 = vote_stats.option0 as f64 * liquidity_inverse;
-        let x1 = vote_stats.option1 as f64 * liquidity_inverse;
+        let liquidity_inverse = 1.0f64 / *liquidity_parameter as f64;
+        let x0 = ((vote_stats.option0 as f64) * SHARES_PER_UNIT_INV_F64) * liquidity_inverse;
+        let x1 = ((vote_stats.option1 as f64) * SHARES_PER_UNIT_INV_F64) * liquidity_inverse;
         
         // Subtract max for numerical stability
         let max_x = x0.max(x1);

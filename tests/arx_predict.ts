@@ -270,7 +270,7 @@ describe("Voting", () => {
     logStep(`Casting votes (buying shares) for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const sharesToBuy = 10;
+      const sharesToBuy = 3 * 1000000;
       logProgress(i + 1, POLL_IDS.length, `Voting on market ${POLL_ID}`);
       
       await buyShares(
