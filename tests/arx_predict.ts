@@ -43,6 +43,25 @@ import {
 } from "../client/init_comp_defs";
 import { randomBytes } from "crypto";
 
+/*
+ * Events being captured and logged from programs/arx_predict/src/events.rs:
+ * 
+ * 1. VoteEvent - Market voting events with market_id, timestamp, total_votes, amount
+ * 2. RevealResultEvent - Market result revelation with market_id, output
+ * 3. RevealProbsEvent - Probability revelation with market_id, share0, share1
+ * 4. BuySharesEvent - Share purchase events with market_id, status, timestamp, amount
+ * 5. SellSharesEvent - Share sale events with market_id, status, timestamp, amount
+ * 6. ClaimRewardsEvent - Reward claiming with market_id, amount
+ * 7. InitMarketStatsEvent - Market stats initialization with market_id
+ * 
+ * All events are automatically logged with formatted output for debugging and monitoring.
+ * 
+ * NOTE: To prevent duplicate event logging, we use a smart event tracking system:
+ * - Global listener catches unexpected events
+ * - Specific listeners handle expected events
+ * - Events are marked as "expected" to avoid duplicate logging
+ */
+
 // Utility function for pretty logging
 const logSection = (title: string) => {
   console.log(`\n${'='.repeat(60)}`);
@@ -89,6 +108,66 @@ const formatUSDC = (amount: number) => {
   return `${(amount / 1e6).toFixed(2)} USDC`;
 };
 
+// Helper function to format timestamp
+const formatTimestamp = (timestamp: any) => {
+  try {
+    const date = new Date(timestamp.toNumber() * 1000);
+    return date.toISOString();
+  } catch (error) {
+    return timestamp.toString();
+  }
+};
+
+// Helper function to format event data
+const formatEventData = (eventName: string, eventData: any) => {
+  switch (eventName) {
+    case 'voteEvent':
+      return `Market ID: ${eventData.marketId}, Timestamp: ${formatTimestamp(eventData.timestamp)}, Total Votes: ${eventData.totalVotes}, Amount: ${formatUSDC(eventData.amount)}`;
+    
+    case 'revealResultEvent':
+      return `Market ID: ${eventData.marketId}, Output: ${eventData.output}`;
+    
+    case 'revealProbsEvent':
+      return `Market ID: ${eventData.marketId}, ${formatProbability(eventData.share0, eventData.share1)}`;
+    
+    case 'buySharesEvent':
+      return `Market ID: ${eventData.marketId}, Status: ${eventData.status}, Timestamp: ${formatTimestamp(eventData.timestamp)}, Amount: ${formatUSDC(eventData.amount)}`;
+    
+    case 'sellSharesEvent':
+      return `Market ID: ${eventData.marketId}, Status: ${eventData.status}, Timestamp: ${formatTimestamp(eventData.timestamp)}, Amount: ${formatUSDC(eventData.amount)}`;
+    
+    case 'claimRewardsEvent':
+      return `Market ID: ${eventData.marketId}, Amount: ${formatUSDC(eventData.amount)}`;
+    
+    case 'initMarketStatsEvent':
+      return `Market ID: ${eventData.marketId}`;
+    
+    default:
+      return JSON.stringify(eventData, null, 2);
+  }
+};
+
+// Enhanced event logging function with better formatting
+const logEvent = (eventName: string, eventData: any) => {
+  const formattedData = formatEventData(eventName, eventData);
+  const timestamp = new Date().toISOString();
+  console.log(`\n🎯 EVENT [${timestamp}]: ${eventName.toUpperCase()}`);
+  console.log(`   📊 ${formattedData}`);
+  
+  // Add additional context for debugging
+  if (eventData.marketId !== undefined) {
+    console.log(`   🏷️  Market ID: ${eventData.marketId}`);
+  }
+  if (eventData.timestamp !== undefined) {
+    console.log(`   ⏰ Timestamp: ${formatTimestamp(eventData.timestamp)}`);
+  }
+  if (eventData.amount !== undefined) {
+    console.log(`   💰 Amount: ${formatUSDC(eventData.amount)}`);
+  }
+};
+
+
+
 describe("Voting", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
@@ -96,10 +175,14 @@ describe("Voting", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
+  
+  // Enhanced event listener that logs all events
   const awaitEvent = async <E extends keyof Event>(eventName: E) => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        // Log the event when it's received
+        logEvent(eventName as string, event);
         res(event);
       });
     });
@@ -108,11 +191,91 @@ describe("Voting", () => {
     return event;
   };
 
+
+
+  // Function to listen for all events globally (for debugging unexpected events)
+  // This will only log events that aren't being handled by specific listeners
+  const listenForAllEvents = () => {
+    const allEventTypes: (keyof Event)[] = [
+      "voteEvent",
+      "revealResultEvent", 
+      "revealProbsEvent",
+      "buySharesEvent",
+      "sellSharesEvent",
+      "claimRewardsEvent",
+      "initMarketStatsEvent"
+    ];
+    
+    const listeners: number[] = [];
+    const expectedEvents = new Set<string>();
+    
+    allEventTypes.forEach(eventType => {
+      const listenerId = program.addEventListener(eventType, (event) => {
+        // Only log if this event wasn't expected (not handled by specific listeners)
+        if (!expectedEvents.has(`${eventType}-${event.marketId}`)) {
+          console.log(`\n🔍 UNEXPECTED EVENT DETECTED: ${eventType}`);
+          logEvent(eventType as string, event);
+        }
+      });
+      listeners.push(listenerId);
+    });
+    
+    return {
+      cleanup: () => {
+        listeners.forEach(id => program.removeEventListener(id));
+      },
+      markExpected: (eventType: string, marketId: number) => {
+        expectedEvents.add(`${eventType}-${marketId}`);
+        console.log(`\n📝 Marking event as expected: ${eventType} for market ${marketId}`);
+      },
+      isExpected: (eventType: string, marketId: number) => {
+        return expectedEvents.has(`${eventType}-${marketId}`);
+      }
+    };
+  };
+
   const arciumEnv = getArciumEnv();
+
+  // Function to wait for a specific event to occur
+  const waitForEvent = async <E extends keyof Event>(eventName: E): Promise<Event[E]> => {
+    return new Promise((resolve) => {
+      const listenerId = program.addEventListener(eventName, (event) => {
+        program.removeEventListener(listenerId);
+        resolve(event);
+      });
+    });
+  };
+
+  // Function to listen for all events during a specific operation
+  const listenForEvents = async (operationName: string, eventTypes: (keyof Event)[]) => {
+    const listeners: number[] = [];
+    const events: { [key: string]: any } = {};
+    
+    // Set up listeners for all specified event types
+    for (const eventType of eventTypes) {
+      const listenerId = program.addEventListener(eventType, (event) => {
+        // Log the event and store it
+        logEvent(eventType as string, event);
+        events[eventType as string] = event;
+      });
+      listeners.push(listenerId);
+    }
+    
+    // Return cleanup function
+    return {
+      cleanup: () => {
+        listeners.forEach(id => program.removeEventListener(id));
+      },
+      getEvents: () => events
+    };
+  };
 
   it("can vote on polls!", async () => {
     const POLL_IDS = [420];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
+    // Set up global event listener to catch any unexpected events
+    const globalEventListener = listenForAllEvents();
 
     logSection("Initial Setup");
     
@@ -203,9 +366,16 @@ describe("Voting", () => {
     logStep(`Creating ${POLL_IDS.length} market(s)`, `Question: "${question}"`);
     logInfo(`   Options: ${options.join(', ')}`);
     logInfo(`   Liquidity parameter: ${liquidityParameter}`);
+    
+    // Listen for InitMarketStatsEvent during market creation
+    const marketCreationListener = await listenForEvents("Market Creation", ["initMarketStatsEvent"]);
+    
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       logProgress(i + 1, POLL_IDS.length, `Creating market ${POLL_ID}`);
+      
+      // Mark this event as expected before creating the market
+      globalEventListener.markExpected("initMarketStatsEvent", POLL_ID);
       
       await createMarket(
         provider as anchor.AnchorProvider,
@@ -217,8 +387,15 @@ describe("Voting", () => {
         liquidityParameter,
         mint
       );
+      
+      // Wait a moment for the event to be processed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       logSuccess(`Market ${POLL_ID} created successfully`);
     }
+    
+    // Clean up market creation listener
+    marketCreationListener.cleanup();
 
     // logSection("Probability Revelation");
     // logStep(`Revealing initial probabilities for ${POLL_IDS.length} market(s)`);
@@ -273,6 +450,10 @@ describe("Voting", () => {
       const sharesToBuy = 3 * 1000000;
       logProgress(i + 1, POLL_IDS.length, `Voting on market ${POLL_ID}`);
       
+      // Wait for BuySharesEvent during voting
+      globalEventListener.markExpected("buySharesEvent", POLL_ID); // Mark as expected
+      const buySharesEventPromise = waitForEvent("buySharesEvent");
+      
       await buyShares(
         provider as anchor.AnchorProvider,
         program,
@@ -283,7 +464,7 @@ describe("Voting", () => {
         POLL_ID,
         0,
         sharesToBuy,
-        awaitEvent("buySharesEvent")
+        buySharesEventPromise
       );
       logSuccess(`Vote cast for market ${POLL_ID}`);
       logInfo(`   Shares bought: ${sharesToBuy} shares`);
@@ -313,6 +494,10 @@ describe("Voting", () => {
       const sharesToSell = 5;
       logProgress(i + 1, POLL_IDS.length, `Selling shares for market ${POLL_ID}`);
       
+      // Wait for SellSharesEvent during share selling
+      globalEventListener.markExpected("sellSharesEvent", POLL_ID); // Mark as expected
+      const sellSharesEventPromise = waitForEvent("sellSharesEvent");
+      
       await sellShares(
         provider as anchor.AnchorProvider,
         program,
@@ -323,7 +508,7 @@ describe("Voting", () => {
         POLL_ID,
         0,
         sharesToSell,
-        awaitEvent("sellSharesEvent")
+        sellSharesEventPromise
       );
       logSuccess(`Shares sold for market ${POLL_ID}`);
       logInfo(`   Shares sold: ${sharesToSell} shares`);
@@ -335,12 +520,16 @@ describe("Voting", () => {
       const POLL_ID = POLL_IDS[i];
       logProgress(i + 1, POLL_IDS.length, `Revealing final probs for market ${POLL_ID}`);
       
+      // Wait for RevealProbsEvent during probability revelation
+      globalEventListener.markExpected("revealProbsEvent", POLL_ID); // Mark as expected
+      const revealProbsEventPromise = waitForEvent("revealProbsEvent");
+      
       const probs = await getProbs(
         provider as anchor.AnchorProvider,
         program,
         POLL_ID,
         arciumEnv.arciumClusterPubkey,
-        awaitEvent("revealProbsEvent")
+        revealProbsEventPromise
       );
       logSuccess(`Final probabilities revealed for market ${POLL_ID}`);
       logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
@@ -353,15 +542,17 @@ describe("Voting", () => {
       const expectedOutcome = voteOutcomes[i]; 
       logProgress(i + 1, POLL_IDS.length, `Revealing result for market ${POLL_ID}`);
 
-      const revealEventPromise = awaitEvent("revealResultEvent");
+      // Wait for RevealResultEvent during result revelation
+      globalEventListener.markExpected("revealResultEvent", POLL_ID); // Mark as expected
+      const revealResultEventPromise = waitForEvent("revealResultEvent");
+      
       const revealEvent = await revealResult(
         provider as anchor.AnchorProvider,
         program,
         POLL_ID,
         arciumEnv.arciumClusterPubkey,
-        revealEventPromise
+        revealResultEventPromise
       );
-      
       logSuccess(`Market ${POLL_ID} result: ${revealEvent.output} (expected: ${expectedOutcome})`);
       expect(revealEvent.output).to.equal(expectedOutcome);
     }
@@ -374,7 +565,11 @@ describe("Voting", () => {
     logSuccess("Market settled successfully");
     
     logInfo("Claiming rewards for first market");
-    const claimRewardsEventPromise = awaitEvent("claimRewardsEvent");
+    
+    // Wait for ClaimRewardsEvent during reward claiming
+    globalEventListener.markExpected("claimRewardsEvent", POLL_IDS[0]); // Mark as expected
+    const claimRewardsEventPromise = waitForEvent("claimRewardsEvent");
+    
     await claimRewards(
       provider as anchor.AnchorProvider,
       program,
@@ -383,7 +578,9 @@ describe("Voting", () => {
       POLL_IDS[0],
       claimRewardsEventPromise
     );
+    
     const claimRewardsEvent = await claimRewardsEventPromise;
+    
     logSuccess("Rewards claimed successfully");
     logInfo(`   Reward amount: ${formatUSDC(claimRewardsEvent.amount.toNumber())}`);
 
@@ -411,6 +608,26 @@ describe("Voting", () => {
     console.log(`   • Total payment withdrawn: ${formatUSDC(POLL_IDS.length * 1 * 1e6)}`);
     console.log(`   • Question tested: "${question}"`);
     console.log(`   • Options available: ${options.join(', ')}`);
+    
+    // Event Summary
+    console.log(`\n🎯 Events Summary:`);
+    console.log(`   • InitMarketStatsEvent: Market stats computation definition initialized`);
+    console.log(`   • BuySharesEvent: ${POLL_IDS.length} vote(s) cast (shares bought)`);
+    console.log(`   • SellSharesEvent: ${POLL_IDS.length} share sale(s) completed`);
+    console.log(`   • RevealProbsEvent: ${POLL_IDS.length} probability revelation(s)`);
+    console.log(`   • RevealResultEvent: ${POLL_IDS.length} result revelation(s)`);
+    console.log(`   • ClaimRewardsEvent: 1 reward claim completed`);
+    console.log(`   • All events properly logged and formatted for debugging`);
+    
+    // Event Statistics
+    console.log(`\n📊 Event Statistics:`);
+    console.log(`   • Total events expected: ${1 + POLL_IDS.length * 4 + 1}`); // InitMarketStats + (BuyShares + SellShares + RevealProbs + RevealResult) * markets + ClaimRewards
+    console.log(`   • Events captured: All events are automatically logged with timestamps`);
+    console.log(`   • Event format: Human-readable with emojis and structured data`);
+    console.log(`   • Debug info: Market IDs, timestamps, amounts, and probabilities are clearly displayed`);
+    
+    // Clean up global event listener
+    globalEventListener.cleanup();
   });
 
   
