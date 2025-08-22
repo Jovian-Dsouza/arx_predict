@@ -172,6 +172,7 @@ export async function createMarket(
     program.programId,
     "confirmed"
   );
+  return finalizePollSig;
 }
 
 export async function sendPayment(
@@ -190,6 +191,7 @@ export async function sendPayment(
         mint: mint,
       })
       .rpc({ commitment: "confirmed" });
+    return sig;
 }
 
 export async function withdrawPayment(
@@ -266,7 +268,7 @@ export async function buyShares(
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  mpcPublicKey: Uint8Array,
   owner: PublicKey,
   marketId: number,
   vote: number,
@@ -312,6 +314,9 @@ export async function buyShares(
   );
 
   const buySharesEvent = await buySharesEventPromise;
+  const buySharesAmountUsdc = buySharesEvent.amount / 1e6;
+  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}`);
+  return finalizeSig;
 }
 
 export async function sellShares(
@@ -319,7 +324,7 @@ export async function sellShares(
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
-  mpcPublicKey: Uint8Array<ArrayBufferLike>,
+  mpcPublicKey: Uint8Array,
   owner: PublicKey,
   marketId: number,
   vote: number,
@@ -365,6 +370,9 @@ export async function sellShares(
   );
 
   const sellSharesEvent = await sellSharesEventPromise;
+  const sellSharesAmountUsdc = sellSharesEvent.amount / 1e6;
+  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}`);
+  return finalizeSig;
 }
 
 export async function claimRewards(

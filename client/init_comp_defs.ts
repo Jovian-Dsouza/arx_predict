@@ -23,6 +23,19 @@ import {
   getMXEPublicKey,
 } from "@arcium-hq/client";
 
+export async function checkCompDefAccountExists(
+  provider: anchor.AnchorProvider,
+  compDefPDA: PublicKey
+): Promise<boolean> {
+  try {
+    const accountInfo = await provider.connection.getAccountInfo(compDefPDA);
+    return accountInfo !== null;
+  } catch (error) {
+    console.log(`Error checking account existence: ${error}`);
+    return false;
+  }
+}
+
 export async function initMarketStatsCompDef(
     provider: anchor.AnchorProvider,
     program: Program<ArxPredict>,
@@ -38,6 +51,12 @@ export async function initMarketStatsCompDef(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
       getArciumProgAddress()
     )[0];
+
+    const exists = await checkCompDefAccountExists(provider, compDefPDA);
+    if (exists) {
+      console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+      return "Account already exists";
+    }
 
     const sig = await program.methods
       .initMarketStatsCompDef()
@@ -95,6 +114,12 @@ export async function initUserPositionCompDef(
     getArciumProgAddress()
   )[0];
 
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
+
   const sig = await program.methods
     .initUserPositionCompDef()
     .accounts({
@@ -151,6 +176,12 @@ export async function initRevealResultCompDef(
     getArciumProgAddress()
   )[0];
 
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
+
   const sig = await program.methods
     .initRevealResultCompDef()
     .accounts({
@@ -206,6 +237,12 @@ export async function initRevealProbsCompDef(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
     getArciumProgAddress()
   )[0];
+
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
 
   const sig = await program.methods
     .initRevealProbsCompDef()
@@ -264,6 +301,12 @@ export async function initBuySharesCompDef(
     getArciumProgAddress()
   )[0];
 
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
+
   const sig = await program.methods
     .initBuySharesCompDef()
     .accounts({
@@ -320,6 +363,12 @@ export async function initSellSharesCompDef(
     getArciumProgAddress()
   )[0];
 
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
+
   const sig = await program.methods
     .initSellSharesCompDef()
     .accounts({
@@ -375,6 +424,11 @@ export async function initClaimRewardsCompDef(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
     getArciumProgAddress()
   )[0];
+  const exists = await checkCompDefAccountExists(provider, compDefPDA);
+  if (exists) {
+    console.log(`Computation definition account ${compDefPDA.toString()} already exists. Skipping initialization.`);
+    return "Account already exists";
+  }
 
   const sig = await program.methods
     .initClaimRewardsCompDef()

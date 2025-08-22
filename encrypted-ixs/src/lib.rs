@@ -30,7 +30,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn init_market_stats(mxe: Mxe) -> Enc<Mxe, MarketStats> {
+    pub fn init_market_stats(mxe: Mxe, liquidity_parameter: u64) -> Enc<Mxe, MarketStats> {
         let vote_stats = VoteStats { 
             option0: 0,
             option1: 0,
@@ -39,10 +39,11 @@ mod circuits {
             option0: 0.5,
             option1: 0.5,
         };
+        let cost = (liquidity_parameter as f64) * (2.0f64).ln(); //TODO fixed 2 as number of options is 2
         let market_stats = MarketStats {
             vote_stats,
             probs,
-            cost: 0.0,
+            cost,
         };
         mxe.from_arcis(market_stats)
     }
@@ -145,16 +146,18 @@ mod circuits {
 
 
     fn cal_prob(vote_stats: &VoteStats, liquidity_parameter: &u64) -> (Probs, f64) {
-        // let logit0 = (vote_stats.option0 as f64 + 1.0).ln(); // Add 1 for smoothing
-        // let logit1 = (vote_stats.option1 as f64 + 1.0).ln(); // Add 1 for smoothing
-        
-        // let max_logit = if logit0 > logit1 { logit0 } else { logit1 };
-        // let exp0 = (logit0 - max_logit).exp();
-        // let exp1 = (logit1 - max_logit).exp();
+        // let exp0 = (vote_stats.option0 as f64 / *liquidity_parameter as f64).exp();
+        // let exp1 = (vote_stats.option1 as f64 / *liquidity_parameter as f64).exp();
         // let sum_exp = exp0 + exp1;
 
-        let exp0 = (vote_stats.option0 as f64 / *liquidity_parameter as f64).exp();
-        let exp1 = (vote_stats.option1 as f64 / *liquidity_parameter as f64).exp();
+        let liquidity_inverse = 1.0 / *liquidity_parameter as f64;
+        let x0 = vote_stats.option0 as f64 * liquidity_inverse;
+        let x1 = vote_stats.option1 as f64 * liquidity_inverse;
+        
+        // Subtract max for numerical stability
+        let max_x = x0.max(x1);
+        let exp0 = (x0 - max_x).exp();
+        let exp1 = (x1 - max_x).exp();
         let sum_exp = exp0 + exp1;
 
         (
@@ -162,7 +165,7 @@ mod circuits {
                 option0: exp0/sum_exp,
                 option1: exp1/sum_exp,
             }, 
-            (*liquidity_parameter as f64) * sum_exp
+            (*liquidity_parameter as f64) * (sum_exp.ln() + max_x)
         )
     }
 

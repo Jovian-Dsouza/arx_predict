@@ -117,7 +117,10 @@ impl<'info> CreateMarket<'info> {
 
         //TODO: Market maker pays b*ln(MAX_OPTIONS)
 
-        let args = vec![Argument::PlaintextU128(nonce)];
+        let args = vec![
+            Argument::PlaintextU128(nonce),
+            Argument::PlaintextU64(liquidity_parameter),
+        ];
         // Calls init_market_stats
         queue_computation(
             self,
