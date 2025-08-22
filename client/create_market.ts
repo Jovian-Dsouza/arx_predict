@@ -36,7 +36,7 @@ import {
   getMXEPublicKeyWithRetry,
 } from "../client/arcium_helper";
 
-import { initCompDefs, setup } from "./setup";
+import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
 
 
 async function createMarket() {
@@ -51,26 +51,24 @@ async function createMarket() {
         mxePublicKey,
     } = setupData;
     
-    // await initCompDefs(setupData);
-
-    
 
     const marketId = 1;
     const liquidityParameter = 10;
     const options = ["Yes", "No"];
     const question = `$SOL to 500?`;
 
-    
-    // await createMarketHelper(
-    //     provider,
-    //     program,
-    //     clusterAccount,
-    //     marketId,
-    //     question,
-    //     options,
-    //     liquidityParameter,
-    //     mint
-    //   );
+    console.log("Creating market", marketId, "with liquidity parameter", liquidityParameter);
+    const sig = await createMarketHelper(
+        provider,
+        program,
+        clusterAccount,
+        marketId,
+        question,
+        options,
+        liquidityParameter,
+        mint
+      );
+    console.log("Market created: ", sig);
 }
 
 async function createUserPosition() {
@@ -123,7 +121,7 @@ async function buyShares() {
     } = setupData;
 
     const marketId = 1;
-    const sharesToBuy = 0.0000000001;
+    const sharesToBuy = 3;
     const vote = 0;
     const ata = await getRequiredATA(provider, wallet, mint);
 
@@ -169,12 +167,12 @@ async function initDefs() {
 }
 
 async function main() {
-    // await initDefs();
-    // await createMarket();
+    // await initDefs();    
+    //await createMarket();
     // await createUserPosition();
-    // await sendPayment();
-    await buyShares();
-    // await revealProbs();
+    //await sendPayment();
+    // await buyShares();
+    await revealProbs();
 
 }
 
