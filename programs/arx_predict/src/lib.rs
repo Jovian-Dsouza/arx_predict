@@ -73,6 +73,10 @@ pub mod arx_predict {
         ctx.accounts.market_acc.nonce = o.nonce;
         ctx.accounts.market_acc.updated_at = 0;
 
+        emit!(InitMarketStatsEvent {
+            market_id: ctx.accounts.market_acc.id,
+        });
+
         Ok(())
     }
 
@@ -112,6 +116,7 @@ pub mod arx_predict {
 
         if ctx.accounts.user_position_acc.balance < amount {
             emit!(BuySharesEvent {
+                market_id: ctx.accounts.market_acc.id,
                 status: 0,
                 timestamp: current_timestamp,
                 amount: amount,
@@ -128,6 +133,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.tvl += amount;
         
         emit!(BuySharesEvent {
+            market_id: ctx.accounts.market_acc.id,
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
@@ -154,6 +160,7 @@ pub mod arx_predict {
 
         if status == 0 { // Insufficient shares
             emit!(SellSharesEvent {
+                market_id: ctx.accounts.market_acc.id,
                 status: 0,
                 timestamp: current_timestamp,
                 amount: 0,
@@ -171,6 +178,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.tvl -= amount;
         
         emit!(SellSharesEvent {
+            market_id: ctx.accounts.market_acc.id,
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
@@ -189,7 +197,10 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        emit!(RevealResultEvent { output: o });
+        emit!(RevealResultEvent { 
+            market_id: ctx.accounts.market_acc.id,
+            output: o,
+        });
 
         Ok(())
     }
@@ -211,6 +222,7 @@ pub mod arx_predict {
 
 
         emit!(RevealProbsEvent { 
+            market_id: ctx.accounts.market_acc.id,
             share0: o[0] as f64,
             share1: o[1] as f64,
         });
@@ -234,6 +246,7 @@ pub mod arx_predict {
         
         
         emit!(ClaimRewardsEvent {
+            market_id: ctx.accounts.user_position_acc.market_id,
             amount: amount,
         });
 
@@ -263,10 +276,11 @@ pub mod arx_predict {
     pub fn create_user_position(
         ctx: Context<CreateUserPosition>,
         computation_offset: u64,
-        _market_id: u32,
+        market_id: u32,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_user_position(
+            market_id,
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,

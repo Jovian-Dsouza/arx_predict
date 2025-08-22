@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::{constants::{MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS};
 
@@ -79,7 +80,10 @@ impl<'info> RevealVotingResult<'info> {
             ),
         ];
 
-        queue_computation(self, computation_offset, args, vec![], None)?;
+        queue_computation(self, computation_offset, args, vec![CallbackAccount {
+            pubkey: self.market_acc.key(),
+            is_writable: false,
+        }], None)?;
 
         //TODO: Settle market
         Ok(())

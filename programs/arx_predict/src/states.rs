@@ -31,6 +31,7 @@ pub struct UserPosition {
     pub nonce: u128,
     pub shares: [[u8; 32]; MAX_OPTIONS],
     pub balance: u64,    
+    pub market_id: u32,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, InitSpace)]

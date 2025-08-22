@@ -53,6 +53,8 @@ pub struct RevealVotingResultCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+    #[account()]
+    pub market_acc: Account<'info, MarketAccount>,
 }
 
 #[callback_accounts("reveal_probs", payer)]
