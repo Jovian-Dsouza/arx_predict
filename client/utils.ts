@@ -24,12 +24,14 @@ export async function getRequiredATA(
   provider: anchor.AnchorProvider,
   wallet: anchor.web3.Keypair,
   mint: anchor.web3.PublicKey,
+  mintAuthority: anchor.web3.Keypair,
+  feePayer: anchor.web3.Keypair,
   mintAmount: number = 0
 ) {
   const ata = (
     await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      wallet,
+      feePayer,
       mint,
       wallet.publicKey,
       false
@@ -38,10 +40,10 @@ export async function getRequiredATA(
   if (mintAmount > 0) {
     await mintTo(
       provider.connection,
-      wallet, //fee payer
+      feePayer, //fee payer
       mint,
       ata,
-      wallet, //mint authority
+      mintAuthority, //mint authority
       mintAmount
     );
   }
@@ -53,4 +55,12 @@ export function readKpJson(path: string): anchor.web3.Keypair {
   return anchor.web3.Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(file.toString()))
   );
+}
+
+export function generateKeypairFromSeed(seed: string) {
+  const bytes1 = new TextEncoder().encode(seed);
+  let seedUint = new Uint8Array([...bytes1]);
+  let finalSeeds = new Uint8Array(32);
+  finalSeeds.set(seedUint.subarray(0, 32));
+  return anchor.web3.Keypair.fromSeed(finalSeeds);
 }

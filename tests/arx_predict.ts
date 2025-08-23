@@ -18,7 +18,7 @@ import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
 
-import { createTokenMint, getRequiredATA, readKpJson } from "../client/utils";
+import { createTokenMint, generateKeypairFromSeed, getRequiredATA, readKpJson } from "../client/utils";
 import {
   getMXEPublicKeyWithRetry,
   getProbs,
@@ -296,10 +296,26 @@ describe("Voting", () => {
       provider as anchor.AnchorProvider,
       owner,
       mint,
+      owner,
+      owner,
       100000 * 1e6
     );
     logSuccess(`Token mint: ${mint.toString()}`);
     logSuccess(`Owner ATA: ${ata.toString()}`);
+
+    const voters = [
+      generateKeypairFromSeed("voter1"),
+      generateKeypairFromSeed("voter2"),
+    ] 
+    const voterAtas = await Promise.all(voters.map(voter => getRequiredATA(
+      provider as anchor.AnchorProvider,
+      voter,
+      mint,
+      owner,
+      owner,
+      100000 * 1e6
+    )));
+    logSuccess(`Voter ATAs, Funded`);
 
     logStep("Fetching MXE public key");
     const mxePublicKey = await getMXEPublicKeyWithRetry(
