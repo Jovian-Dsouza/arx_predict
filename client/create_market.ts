@@ -1,24 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { ArxPredict } from "../target/types/arx_predict";
-import {
-  awaitComputationFinalization,
-  deserializeLE,
-  getArciumEnv,
-  getClusterAccAddress,
-  getCompDefAccAddress,
-  getCompDefAccOffset,
-  getComputationAccAddress,
-  getExecutingPoolAccAddress,
-  getMempoolAccAddress,
-  getMXEAccAddress,
-  getMXEPublicKey,
-  RescueCipher,
-  x25519,
-} from "@arcium-hq/client";
-import * as fs from "fs";
-import * as os from "os";
-import { expect } from "chai";
 
 import { createTokenMint, getRequiredATA, readKpJson } from "../client/utils";
 import {
@@ -85,7 +65,8 @@ async function createUserPosition() {
         provider as anchor.AnchorProvider,
         program,
         clusterAccount,
-        marketId
+        marketId,
+        setupData.wallet
       );
 }
 
@@ -99,7 +80,7 @@ async function sendPayment() {
     } = setupData;
     const marketId = 1;
     const paymentAmount = 5 * 1e6;
-    const ata = await getRequiredATA(provider, wallet, mint);
+    const ata = await getRequiredATA(provider, wallet, mint, wallet, wallet, 0);
     console.log("ATA: ", ata.toBase58());
     const sig = await sendPaymentHelper(program, wallet, ata, mint, marketId, paymentAmount);
     console.log("Payment sent: ", sig);
@@ -123,7 +104,7 @@ async function buyShares() {
     const marketId = 1;
     const sharesToBuy = 3;
     const vote = 0;
-    const ata = await getRequiredATA(provider, wallet, mint);
+    const ata = await getRequiredATA(provider, wallet, mint, wallet, wallet, 0);
 
     const sig = await buySharesHelper(
         provider as anchor.AnchorProvider,
@@ -131,7 +112,7 @@ async function buyShares() {
         clusterAccount,
         cipher,
         cipherPublicKey,
-        wallet.publicKey,
+        wallet,
         marketId,
         vote,
         sharesToBuy,
@@ -172,7 +153,7 @@ async function main() {
     // await createUserPosition();
     //await sendPayment();
     // await buyShares();
-    await revealProbs();
+    // await revealProbs();
 
 }
 
