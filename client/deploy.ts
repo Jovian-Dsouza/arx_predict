@@ -145,23 +145,25 @@ async function buyShares(setupData: SetupData) {
     console.log("Shares bought: ", sig);
 }
 
-async function getVoteStats(
+async function getMarketStats(
     setupData: SetupData,
     marketId: number
 ) {
     let voteStats = [0, 0];
-    const probsDataPromise =  getProbsHelper(
-        setupData.provider as anchor.AnchorProvider,
-        setupData.program,
-        marketId,
-        setupData.clusterAccount,
-        setupData.awaitEvent("revealProbsEvent")
-    );
+    // const probsDataPromise =  getProbsHelper(
+    //     setupData.provider as anchor.AnchorProvider,
+    //     setupData.program,
+    //     marketId,
+    //     setupData.clusterAccount,
+    //     setupData.awaitEvent("revealProbsEvent")
+    // );
+    const probsData = null;
     const marketDataPromise = getMarketData(
         setupData.program,
         marketId
     );
-    const [probsData, marketData] = await Promise.all([probsDataPromise, marketDataPromise]);
+    const marketData = await marketDataPromise;
+    // const [probsData, marketData] = await Promise.all([probsDataPromise, marketDataPromise]);
 
     if (probsData) {
         voteStats = [probsData.votes[0].toNumber(), probsData.votes[1].toNumber()];
@@ -169,7 +171,11 @@ async function getVoteStats(
         voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];
     }
 
-    return voteStats;
+    return {
+        voteStats,
+        liquidityParameter: marketData.liquidityParameter.toNumber(),
+        tvl: marketData.tvl.toNumber(),
+    };
 }
 
 async function main() {
@@ -182,8 +188,8 @@ async function main() {
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
 
-    const voteStats = await getVoteStats(setupData, marketId);
-    console.log("Vote stats: ", voteStats);
+    const marketStats = await getMarketStats(setupData, marketId);
+    console.log("Market stats: ", marketStats);
 
     // await sendPayment();
     // await buyShares(setupData);
