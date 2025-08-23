@@ -547,6 +547,6 @@ export async function getUserPosition(
   ];
   const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
   const userPosition = await program.account.userPosition.fetch(userPositionPDA);
-  console.log(`User position=> ${userPositionPDA.toBase58()} balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+  console.log(`User position=> ${userPositionPDA.toBase58()} marketId: ${userPosition.marketId}, balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
   return userPosition;
 }

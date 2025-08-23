@@ -15,6 +15,7 @@ import {
   claimRewards as claimRewardsHelper,
   getMXEPublicKeyWithRetry,
   fundAndCreateMarket,
+  getUserPosition,
 } from "../client/arcium_helper";
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
@@ -45,23 +46,30 @@ async function createMarket(
     console.log("Market created: ", sig);
 }
 
-async function createUserPosition() {
-    const setupData = await setup();
-    const {
-        provider,
-        program,
-        clusterAccount,
-    } = setupData;
-
-    const marketId = 1;
-
-    await createUserPositionHelper(
-        provider as anchor.AnchorProvider,
-        program,
-        clusterAccount,
+async function createUserPosition(
+    setupData: SetupData,
+    marketId: number,
+    owner: anchor.web3.Keypair
+) {
+    console.log("Creating user position for market", marketId);
+    try{
+        const existingUserPosition = await getUserPosition(
+            setupData.program,
+            owner,
+            marketId
+        );
+        return;
+    } catch (e) {
+        console.error("Error creating user position: ", e);
+    }
+    const sig = await createUserPositionHelper(
+        setupData.provider,
+        setupData.program,
+        setupData.clusterAccount,
         marketId,
-        setupData.wallet
+        owner
       );
+    console.log("User position created: ", sig);
 }
 
 async function sendPayment() {
@@ -136,11 +144,14 @@ async function revealProbs() {
 }
 
 async function main() {
+    const marketId = 1;
     const setupData = await setup();
     // await initCompDefs(setupData);    
-    await createMarket(setupData);
-    // await createUserPosition();
-    //await sendPayment();
+    // await createMarket(setupData);
+
+    // Frontend
+    await createUserPosition(setupData, marketId, setupData.wallet);
+    // await sendPayment();
     // await buyShares();
     // await revealProbs();
 
