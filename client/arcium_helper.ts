@@ -55,7 +55,8 @@ export async function createUserPosition(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
-  marketId: number
+  marketId: number,
+  owner: anchor.web3.Keypair
 ) {
   const userPositionNonce = randomBytes(16);
 
@@ -68,6 +69,7 @@ export async function createUserPosition(
       new anchor.BN(deserializeLE(userPositionNonce).toString())
     )
     .accountsPartial({
+      payer: owner.publicKey,
       computationAccount: getComputationAccAddress(
         program.programId,
         userPositionComputationOffset
@@ -81,6 +83,7 @@ export async function createUserPosition(
         Buffer.from(getCompDefAccOffset("init_user_position")).readUInt32LE()
       ),
     })
+    .signers([owner])
     .rpc();
 
   const finalizePollSig = await awaitComputationFinalization(
@@ -190,6 +193,7 @@ export async function sendPayment(
         ata: ata,
         mint: mint,
       })
+      .signers([owner])
       .rpc({ commitment: "confirmed" });
     return sig;
 }

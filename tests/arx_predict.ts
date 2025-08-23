@@ -437,7 +437,8 @@ describe("Voting", () => {
         provider as anchor.AnchorProvider,
         program,
         arciumEnv.arciumClusterPubkey,
-        POLL_ID
+        POLL_ID,
+        owner
       );
       logSuccess(`User position created for market ${POLL_ID}`);
     }

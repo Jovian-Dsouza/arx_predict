@@ -5,6 +5,7 @@ import {
 } from "@solana/spl-token";
 import * as fs from "fs";
 import * as anchor from "@coral-xyz/anchor";
+import { SystemProgram, Transaction } from "@solana/web3.js";
 
 export async function createTokenMint(
   provider: anchor.AnchorProvider,
@@ -63,4 +64,16 @@ export function generateKeypairFromSeed(seed: string) {
   let finalSeeds = new Uint8Array(32);
   finalSeeds.set(seedUint.subarray(0, 32));
   return anchor.web3.Keypair.fromSeed(finalSeeds);
+}
+
+export function transferSol(
+  provider: anchor.AnchorProvider,
+  from: anchor.web3.Keypair,
+  to: anchor.web3.PublicKey,
+  amount: number
+) {
+  const transferSol = new Transaction().add(
+    SystemProgram.transfer({ fromPubkey: from.publicKey, toPubkey: to, lamports: amount })
+  );
+  provider.connection.sendTransaction(transferSol, [from]);
 }
