@@ -21,7 +21,7 @@ import {
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
 import { SetupData } from "./setup";
-import { calculateCost } from "./lmsr";
+import { calculateCost, calculateSharesForAmount } from "./lmsr";
 
 
 async function createMarket(
@@ -179,21 +179,70 @@ async function getMarketStats(
     };
 }
 
+async function buySharesInAmount(
+    setupData: SetupData,
+    marketId: number,
+    vote: number,
+    amount: number
+) {
+    const marketStats = await getMarketStats(setupData, marketId);
+    const shares = calculateSharesForAmount(
+        marketStats.liquidityParameter,
+        marketStats.voteStats,
+        vote,
+        amount
+    );
+    console.log(`Buying for vote ${vote} in amount ${amount / 1e6} USDC will give approx ${shares / 1e6} shares`);
+    
+    try {
+        const ata = await getRequiredATA(setupData.provider, setupData.wallet, setupData.mint, setupData.wallet, setupData.wallet, 0);
+        const sig = await sendPaymentHelper(setupData.program, setupData.wallet, ata, setupData.mint, marketId, amount);
+        console.log("Payment sent: ", sig);
+    } catch (error) {
+        console.log("Payment error: ", error);
+    }
+
+    try {
+        const eventData = await buySharesHelper(
+            setupData.provider as anchor.AnchorProvider,
+            setupData.program,
+            setupData.clusterAccount,
+            setupData.cipher,
+            setupData.cipherPublicKey,
+            setupData.wallet,
+            marketId,
+            vote,
+            shares,
+            setupData.awaitEvent("buySharesEvent")
+        );
+        console.log("Shares bought: ", eventData);
+    } catch (error) {
+        console.log("Error buying shares: ", error);
+    }
+}
+
 async function main() {
     const marketId = 1;
-    // const setupData = await setup();
+    const setupData = await setup();
     // await initCompDefs(setupData);    
     // await createMarket(setupData, marketId);
 
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
+    // await buySharesInAmount(setupData, marketId, 1, 1 * 1e6);
+
+    // const userPosition = await getUserPosition(setupData.program, setupData.wallet, marketId);
+    // console.log("User position: ", userPosition);
 
     // const marketStats = await getMarketStats(setupData, marketId);
     // console.log("Market stats: ", marketStats);
 
-    const cost = calculateCost(10, [1000000, 0]);
-    console.log("Cost: ", cost);
+    // const cost = calculateCost(10, [1000000, 0]);
+    // console.log("Cost: ", cost / 1e6);
+
+    // const shares = calculateSharesForAmount(10, [0, 0], 0, 100 * 1e6);
+    // console.log("Shares: ", shares / 1e6);
 
     // await sendPayment();
     // await buyShares(setupData);

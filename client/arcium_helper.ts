@@ -419,7 +419,7 @@ export async function buyShares(
   const buySharesEvent = await buySharesEventPromise;
   const buySharesAmountUsdc = buySharesEvent.amount / 1e6;
   console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}`);
-  return finalizeSig;
+  return buySharesEvent;
 }
 
 export async function sellShares(
