@@ -618,33 +618,6 @@ describe("Voting", () => {
     logSection("Test Completion");
     logSuccess("All voting operations completed successfully! 🎉");
     
-    // Summary of operations
-    console.log(`\n📈 Test Summary:`);
-    console.log(`   • Markets created: ${POLL_IDS.length}`);
-    console.log(`   • Total payment sent: ${formatUSDC(POLL_IDS.length * 100 * 1e6)}`);
-    console.log(`   • Total shares bought: ${POLL_IDS.length * 10} shares`);
-    console.log(`   • Total shares sold: ${POLL_IDS.length * 5} shares`);
-    console.log(`   • Total payment withdrawn: ${formatUSDC(POLL_IDS.length * 1 * 1e6)}`);
-    console.log(`   • Question tested: "${question}"`);
-    console.log(`   • Options available: ${options.join(', ')}`);
-    
-    // Event Summary
-    console.log(`\n🎯 Events Summary:`);
-    console.log(`   • InitMarketStatsEvent: Market stats computation definition initialized`);
-    console.log(`   • BuySharesEvent: ${POLL_IDS.length} vote(s) cast (shares bought)`);
-    console.log(`   • SellSharesEvent: ${POLL_IDS.length} share sale(s) completed`);
-    console.log(`   • RevealProbsEvent: ${POLL_IDS.length} probability revelation(s)`);
-    console.log(`   • RevealResultEvent: ${POLL_IDS.length} result revelation(s)`);
-    console.log(`   • ClaimRewardsEvent: 1 reward claim completed`);
-    console.log(`   • All events properly logged and formatted for debugging`);
-    
-    // Event Statistics
-    console.log(`\n📊 Event Statistics:`);
-    console.log(`   • Total events expected: ${1 + POLL_IDS.length * 4 + 1}`); // InitMarketStats + (BuyShares + SellShares + RevealProbs + RevealResult) * markets + ClaimRewards
-    console.log(`   • Events captured: All events are automatically logged with timestamps`);
-    console.log(`   • Event format: Human-readable with emojis and structured data`);
-    console.log(`   • Debug info: Market IDs, timestamps, amounts, and probabilities are clearly displayed`);
-    
     // Clean up global event listener
     globalEventListener.cleanup();
   });
