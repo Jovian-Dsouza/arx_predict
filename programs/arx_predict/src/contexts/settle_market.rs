@@ -28,9 +28,7 @@ impl<'info> SettleMarket<'info> {
         );
         require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
 
-        // TODO: check expiration date
-
-        self.market_acc.status = MarketStatus::Settled;
+        //self.market_acc.status = MarketStatus::Settled;
         self.market_acc.winning_outcome = winner;
 
         Ok(())

@@ -381,4 +381,11 @@ pub mod arx_predict {
         ctx.accounts.fund_market(amount)
     }
 
+    pub fn claim_market_funds(
+        ctx: Context<ClaimMarketFunds>,
+        id: u32,
+    ) -> Result<()> {
+        ctx.accounts.claim_market_funds(id, ctx.bumps.vault)
+    }
+
 }

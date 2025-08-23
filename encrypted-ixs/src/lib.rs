@@ -187,9 +187,19 @@ mod circuits {
 
     #[instruction]
     pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
+        //TODO: optimizatoin to not pass the whole market stats
         let probs = probs_ctxt.to_arcis();
         let probabilities = [probs.probs.option0.reveal(), probs.probs.option1.reveal()];
         probabilities
+    }
+
+    #[instruction]
+    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>) -> (VoteStats, Probs) {
+        let market_stats = market_stats_ctxt.to_arcis();
+        (
+            market_stats.vote_stats.reveal(),
+            market_stats.probs.reveal(),
+        )
     }
 
     #[instruction]

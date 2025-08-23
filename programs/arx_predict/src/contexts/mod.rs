@@ -11,11 +11,12 @@ pub mod withdraw_payment;
 pub mod settle_market;
 pub mod claim_rewards;
 pub mod fund_market;
+pub mod claim_market_funds;
 
 pub use comp_def::*;
 pub use callbacks::*;
 pub use create_market::*;
-pub use reveal_result::*;
+// pub use reveal_result::*;
 pub use create_user_position::*;
 pub use send_payment::*;
 pub use reveal_probs::*;
@@ -25,3 +26,4 @@ pub use withdraw_payment::*;
 pub use settle_market::*;
 pub use claim_rewards::*;
 pub use fund_market::*;
+pub use claim_market_funds::*;
