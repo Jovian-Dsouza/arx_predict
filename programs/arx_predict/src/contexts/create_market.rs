@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::LN_2_SCALED, states::{MarketStatus}, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
+use crate::{constants::{ADMIN_KEY, LN_2_SCALED}, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Token, Mint, TokenAccount}
@@ -98,6 +98,7 @@ impl<'info> CreateMarket<'info> {
         require!(self.market_acc.status == MarketStatus::Inactive, ErrorCode::MarketInactive);
         require!(options.len() == MAX_OPTIONS, ErrorCode::InvalidNumOptions);
         require!(!question.is_empty(), ErrorCode::InvalidQuestion);
+        require!(self.payer.key() == ADMIN_KEY, ErrorCode::InvalidAuthority);
         for option in &options {
             require!(!option.is_empty(), ErrorCode::EmptyOption);
         }
