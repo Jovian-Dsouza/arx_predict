@@ -8,7 +8,7 @@ use crate::{
         MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, MARKET_REVEAL_PROBS_TIME,
     },
     states::MarketStatus,
-    ErrorCode, MarketAccount, COMP_DEF_OFFSET_REVEAL, ID, ID_CONST, MAX_OPTIONS,
+    ErrorCode, MarketAccount, ID, ID_CONST,
 };
 
 #[queue_computation_accounts("reveal_probs", payer)]

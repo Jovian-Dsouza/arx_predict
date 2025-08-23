@@ -232,18 +232,56 @@ export async function withdrawPayment(
 }
 
 export async function settleMarket(
+  provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
-  owner: anchor.web3.Keypair,
   winner: number,
   marketId: number,
+  arciumClusterPubkey: PublicKey,
+  eventPromise: any
 ) {
-  const sig = await program.methods
-    .settleMarket(marketId, winner)
+  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const revealQueueSig = await program.methods
+    .settleMarket(revealComputationOffset, marketId, winner)
     .accountsPartial({
-      payer: owner.publicKey,
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        revealComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("reveal_market")).readUInt32LE()
+      ),
     })
     .rpc({ commitment: "confirmed" });
+
+  const revealFinalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    revealComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+
+  const settleMarketEvent = await eventPromise;
+  return settleMarketEvent;
 }
+
+// export async function settleMarket(
+//   program: Program<ArxPredict>,
+//   owner: anchor.web3.Keypair,
+//   winner: number,
+//   marketId: number,
+// ) {
+//   const sig = await program.methods
+//     .settleMarket(marketId, winner)
+//     .accountsPartial({
+//       payer: owner.publicKey,
+//     })
+//     .rpc({ commitment: "confirmed" });
+// }
 
 // export async function revealResult(
 //     provider: anchor.AnchorProvider,

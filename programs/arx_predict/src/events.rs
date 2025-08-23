@@ -48,3 +48,8 @@ pub struct ClaimRewardsEvent {
 pub struct InitMarketStatsEvent {
     pub market_id: u32,
 }
+
+#[event]
+pub struct MarketSettledEvent {
+    pub market_id: u32,
+}

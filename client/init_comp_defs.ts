@@ -160,7 +160,7 @@ export async function initUserPositionCompDef(
   return sig;
 }
 
-export async function initRevealResultCompDef(
+export async function initRevealMarketCompDef(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
   owner: anchor.web3.Keypair,
@@ -169,7 +169,7 @@ export async function initRevealResultCompDef(
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
   );
-  const offset = getCompDefAccOffset("reveal_result");
+  const offset = getCompDefAccOffset("reveal_market");
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -183,7 +183,7 @@ export async function initRevealResultCompDef(
   }
 
   const sig = await program.methods
-    .initRevealResultCompDef()
+    .initRevealMarketCompDef()
     .accounts({
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
@@ -195,11 +195,11 @@ export async function initRevealResultCompDef(
     });
 
   if (uploadRawCircuit) {
-    const rawCircuit = fs.readFileSync("build/reveal_result.arcis");
+    const rawCircuit = fs.readFileSync("build/reveal_market.arcis");
 
     await uploadCircuit(
       provider as anchor.AnchorProvider,
-      "init_market_stats",
+      "reveal_market",
       program.programId,
       rawCircuit,
       true

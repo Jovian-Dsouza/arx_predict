@@ -1,7 +1,7 @@
 pub mod comp_def;
 pub mod callbacks;
 pub mod create_market;
-pub mod reveal_result;
+// pub mod reveal_market;
 pub mod create_user_position;
 pub mod send_payment;
 pub mod reveal_probs;

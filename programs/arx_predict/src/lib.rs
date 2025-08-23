@@ -42,8 +42,8 @@ pub mod arx_predict {
         Ok(())
     }
 
-    pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_RESULT_CIRCUIT), None)?;
+    pub fn init_reveal_market_comp_def(ctx: Context<InitRevealMarketCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_MARKET_CIRCUIT), None)?;
         Ok(())
     }
 
@@ -189,19 +189,19 @@ pub mod arx_predict {
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "reveal_result")]
-    pub fn reveal_result_callback(
-        ctx: Context<RevealVotingResultCallback>,
-        output: ComputationOutputs<RevealResultOutput>,
+    #[arcium_callback(encrypted_ix = "reveal_market")]
+    pub fn reveal_market_callback(
+        ctx: Context<RevealMarketCallback>,
+        output: ComputationOutputs<RevealMarketOutput>,
     ) -> Result<()> {
         let o = match output {
-            ComputationOutputs::Success(RevealResultOutput { field_0 }) => field_0,
+            ComputationOutputs::Success(RevealMarketOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
+        ctx.accounts.market_acc.status = MarketStatus::Settled;
 
-        emit!(RevealResultEvent { 
+        emit!(MarketSettledEvent { 
             market_id: ctx.accounts.market_acc.id,
-            output: o,
         });
 
         Ok(())
@@ -359,10 +359,11 @@ pub mod arx_predict {
 
     pub fn settle_market(
         ctx: Context<SettleMarket>,
+        computation_offset: u64,
         id: u32,
         winner: u8,
     ) -> Result<()> {
-        ctx.accounts.settle_market(id, winner)
+        ctx.accounts.settle_market(computation_offset, id, winner)
     }
 
     pub fn claim_rewards(

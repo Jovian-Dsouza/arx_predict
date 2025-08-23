@@ -35,7 +35,7 @@ import {
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
-  initRevealResultCompDef,
+  initRevealMarketCompDef,
   initRevealProbsCompDef,
   initMarketStatsCompDef,
   initBuySharesCompDef,
@@ -315,13 +315,13 @@ describe("Voting", () => {
     );
     logSuccess("User position computation definition initialized");
     
-    const initRRSig = await initRevealResultCompDef(
+    const initRRSig = await initRevealMarketCompDef(
       provider as anchor.AnchorProvider,
       program,
       owner,
       false
     );
-    logSuccess("Reveal result computation definition initialized");
+    logSuccess("Reveal market computation definition initialized");
     
     const initRPSig = await initRevealProbsCompDef(
       provider as anchor.AnchorProvider,
@@ -568,7 +568,14 @@ describe("Voting", () => {
     logStep("Settling markets and claiming rewards");
     
     logInfo("Settling first market");
-    await settleMarket(program, owner, 0, POLL_IDS[0]);
+    await settleMarket(
+      provider as anchor.AnchorProvider,
+      program,
+      0, //winner option
+      POLL_IDS[0],
+      arciumEnv.arciumClusterPubkey,
+      awaitEvent("marketSettledEvent")
+    );
     logSuccess("Market settled successfully");
     
     logInfo("Claiming rewards for first market");

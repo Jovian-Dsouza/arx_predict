@@ -2,7 +2,7 @@ use arcium_anchor::comp_def_offset;
 
 pub const COMP_DEF_OFFSET_INIT_MARKET_STATS: u32 = comp_def_offset("init_market_stats");
 pub const COMP_DEF_OFFSET_INIT_USER_POSITION: u32 = comp_def_offset("init_user_position");
-pub const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
+pub const COMP_DEF_OFFSET_REVEAL_MARKET: u32 = comp_def_offset("reveal_market");
 pub const COMP_DEF_OFFSET_REVEAL_PROBS: u32 = comp_def_offset("reveal_probs");
 pub const COMP_DEF_OFFSET_BUY_SHARES: u32 = comp_def_offset("buy_shares");
 pub const COMP_DEF_OFFSET_SELL_SHARES: u32 = comp_def_offset("sell_shares");
@@ -27,7 +27,7 @@ pub const INIT_USER_POSITION_CIRCUIT: &str = "https://sapphire-literary-rat-567.
 pub const BUY_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/buy_shares_testnet.arcis";
 pub const CLAIM_REWARDS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/claim_rewards_testnet.arcis";
 pub const REVEAL_PROBS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_probs_testnet.arcis";
-pub const REVEAL_RESULT_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_result_testnet.arcis";
+pub const REVEAL_MARKET_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_market_testnet.arcis";
 pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/sell_shares_testnet.arcis";
 
 pub const IS_DEVNET: bool = false;

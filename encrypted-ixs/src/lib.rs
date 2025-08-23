@@ -173,19 +173,6 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> u8 {
-        let vote_stats = vote_stats_ctxt.to_arcis();
-        let mut ans = 0;
-        if vote_stats.option0 > vote_stats.option1 {
-            ans = 0;
-        } else {
-            ans = 1;
-        }
-
-        ans.reveal()
-    }
-
-    #[instruction]
     pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
         //TODO: optimizatoin to not pass the whole market stats
         let probs = probs_ctxt.to_arcis();
@@ -194,12 +181,9 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>) -> (VoteStats, Probs) {
+    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>) -> VoteStats {
         let market_stats = market_stats_ctxt.to_arcis();
-        (
-            market_stats.vote_stats.reveal(),
-            market_stats.probs.reveal(),
-        )
+        market_stats.vote_stats.reveal()
     }
 
     #[instruction]
