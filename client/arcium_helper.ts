@@ -446,3 +446,22 @@ export async function claimMarketFunds(
   console.log(`Claim market funds event=> amount: ${claimMarketFundsAmountUsdc}`);
   return sig;
 }
+
+
+export async function getUserPosition(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  marketId: number
+) {
+  const userPositionSeed = [
+    Buffer.from("user_position"),
+    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+    owner.publicKey.toBuffer(),
+  ];
+  const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
+  console.log(`User position PDA=> ${userPositionPDA.toBase58()}`);
+  const userPosition = await program.account.userPosition.fetch(userPositionPDA);
+  // console.log(`User position=>: ${JSON.stringify(userPosition)}`);
+  console.log(`User position=> balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+  return userPosition;
+}

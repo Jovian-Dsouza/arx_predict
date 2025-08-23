@@ -33,6 +33,7 @@ import {
   claimRewards,
   fundMarket,
   claimMarketFunds,
+  getUserPosition,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -410,23 +411,6 @@ describe("Voting", () => {
     // Clean up market creation listener
     marketCreationListener.cleanup();
 
-    // logSection("Probability Revelation");
-    // logStep(`Revealing initial probabilities for ${POLL_IDS.length} market(s)`);
-    // for (let i = 0; i < POLL_IDS.length; i++) {
-    //   const POLL_ID = POLL_IDS[i];
-    //   logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
-      
-    //   const probs = await getProbs(
-    //     provider as anchor.AnchorProvider,
-    //     program,
-    //     POLL_ID,
-    //     arciumEnv.arciumClusterPubkey,
-    //     awaitEvent("revealProbsEvent")
-    //   );
-    //   logSuccess(`Market ${POLL_ID} probabilities revealed`);
-    //   logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
-    // }
-
     logSection("User Position Creation");
     logStep(`Creating user positions for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
@@ -454,13 +438,17 @@ describe("Voting", () => {
       logInfo(`   Amount: ${formatUSDC(paymentAmount)}`);
     }
 
+    logSection("User Position Balance");
+    logStep(`Getting user position balance for market ${POLL_IDS[0]}`);
+    await getUserPosition(program, owner, POLL_IDS[0]);
+
     logSection("Voting Process");
     const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
     
     logStep(`Casting votes (buying shares) for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const sharesToBuy = 3 * 1000000;
+      const sharesToBuy = 100 * 1000000;
       logProgress(i + 1, POLL_IDS.length, `Voting on market ${POLL_ID}`);
       
       // Wait for BuySharesEvent during voting
@@ -484,22 +472,6 @@ describe("Voting", () => {
       logInfo(`   Vote choice: Option 0 (${options[0]})`);
     }
     
-    // logStep(`Revealing updated probabilities after voting for ${POLL_IDS.length} market(s)`);
-    // for (let i = 0; i < POLL_IDS.length; i++) {
-    //   const POLL_ID = POLL_IDS[i];
-    //   logProgress(i + 1, POLL_IDS.length, `Revealing probs for market ${POLL_ID}`);
-      
-    //   const probs = await getProbs(
-    //     provider as anchor.AnchorProvider,
-    //     program,
-    //     POLL_ID,
-    //     arciumEnv.arciumClusterPubkey,
-    //     awaitEvent("revealProbsEvent")
-    //   );
-    //   logSuccess(`Updated probabilities revealed for market ${POLL_ID}`);
-    //   logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
-    // }
-
     logSection("Share Trading");
     logStep(`Selling shares for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
@@ -548,28 +520,6 @@ describe("Voting", () => {
       logInfo(`   Probabilities: ${formatProbability(probs.share0, probs.share1)}`);
     }
 
-    // logSection("Result Revelation");
-    // logStep(`Revealing results for ${POLL_IDS.length} market(s)`);
-    // for (let i = 0; i < POLL_IDS.length; i++) {
-    //   const POLL_ID = POLL_IDS[i];
-    //   const expectedOutcome = voteOutcomes[i]; 
-    //   logProgress(i + 1, POLL_IDS.length, `Revealing result for market ${POLL_ID}`);
-
-    //   // Wait for RevealResultEvent during result revelation
-    //   globalEventListener.markExpected("revealResultEvent", POLL_ID); // Mark as expected
-    //   const revealResultEventPromise = waitForEvent("revealResultEvent");
-      
-    //   const revealEvent = await revealResult(
-    //     provider as anchor.AnchorProvider,
-    //     program,
-    //     POLL_ID,
-    //     arciumEnv.arciumClusterPubkey,
-    //     revealResultEventPromise
-    //   );
-    //   logSuccess(`Market ${POLL_ID} result: ${revealEvent.output} (expected: ${expectedOutcome})`);
-    //   expect(revealEvent.output).to.equal(expectedOutcome);
-    // }
-
     logSection("Market Settlement & Rewards");
     logStep("Settling markets and claiming rewards");
     
@@ -604,11 +554,15 @@ describe("Voting", () => {
     logSuccess("Rewards claimed successfully");
     logInfo(`   Reward amount: ${formatUSDC(claimRewardsEvent.amount.toNumber())}`);
 
+    logSection("User Position Balance");
+    logStep(`Getting user position balance for market ${POLL_IDS[0]}`);
+    const userPositionAfterRewards = await getUserPosition(program, owner, POLL_IDS[0]);
+
     logSection("Payment Withdrawal");
     logStep(`Withdrawing payments from ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const withdrawalAmount = 1 * 1e6;
+      const withdrawalAmount = userPositionAfterRewards.balance.toNumber();
       logProgress(i + 1, POLL_IDS.length, `Withdrawing from market ${POLL_ID}`);
       
       await withdrawPayment(program, owner, ata, mint, POLL_ID, withdrawalAmount);
