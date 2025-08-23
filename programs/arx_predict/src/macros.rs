@@ -22,3 +22,12 @@ macro_rules! check_mint {
         }
     };
 }
+
+#[macro_export]
+macro_rules! check_admin {
+    ($payer:expr) => {
+        if $crate::constants::IS_DEVNET {
+            require!($payer == $crate::constants::ADMIN_KEY, $crate::errors::ErrorCode::InvalidAuthority);
+        }
+    };
+}

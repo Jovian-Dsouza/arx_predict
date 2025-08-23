@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::{check_mint, constants::ADMIN_KEY, errors::ErrorCode};
+use crate::{check_admin, check_mint};
 
 #[derive(Accounts)]
 #[instruction(_id: u32)]
@@ -45,7 +45,7 @@ impl<'info> FundMarket<'info> {
         amount: u64
     ) -> Result<()> {
         check_mint!(self.mint.key());
-        require!(self.payer.key() == ADMIN_KEY, ErrorCode::InvalidAuthority);
+        check_admin!(self.payer.key());
         let transfer_accounts = TransferChecked {
             from: self.ata.to_account_info(),
             mint: self.mint.to_account_info(),
