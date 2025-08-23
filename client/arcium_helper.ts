@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { ArxPredict } from "../target/types/arx_predict";
 import { randomBytes } from "crypto";
 import {
@@ -176,6 +176,83 @@ export async function createMarket(
     "confirmed"
   );
   return finalizePollSig;
+}
+
+export async function fundAndCreateMarket(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  marketId: number,
+  question: string,
+  options: string[],
+  liquidityParameter: number,
+  mint: PublicKey,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+) {
+
+  const fundingAmount = liquidityParameter * Math.log(options.length) * 1e6;
+  console.log(`Funding market ${marketId}, amount: ${fundingAmount/1e6} USDC`);
+
+  // First fund the market
+  const fundMarketSig = await program.methods
+    .fundMarket(marketId, new anchor.BN(fundingAmount))
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .signers([owner])
+    .rpc({ commitment: "confirmed" });
+
+  console.log(`Market ${marketId} funded with signature: ${fundMarketSig}`);
+
+  // Then create the market
+  const nonce = randomBytes(16);
+  const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const createMarketSig = await program.methods
+    .createMarket(
+      pollComputationOffset,
+      marketId,
+      question,
+      options,
+      new anchor.BN(liquidityParameter),
+      new anchor.BN(deserializeLE(nonce).toString())
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        pollComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("init_market_stats")).readUInt32LE()
+      ),
+      mint: mint,
+      payer: owner.publicKey,
+    })
+    .signers([owner])
+    .rpc({ commitment: "confirmed" });
+
+  console.log(`Market ${marketId} created with signature: ${createMarketSig}`);
+  
+  const finalizePollSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    pollComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  
+  console.log(`Market ${marketId} computation finalized with signature: ${finalizePollSig}`);
+  return { 
+    fundMarketSig, 
+    createMarketSig, 
+    finalizeSig: finalizePollSig 
+  };
 }
 
 export async function sendPayment(

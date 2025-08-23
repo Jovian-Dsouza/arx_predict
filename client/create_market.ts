@@ -14,39 +14,33 @@ import {
   settleMarket as settleMarketHelper,
   claimRewards as claimRewardsHelper,
   getMXEPublicKeyWithRetry,
+  fundAndCreateMarket,
 } from "../client/arcium_helper";
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
+import { SetupData } from "./setup";
 
 
-async function createMarket() {
-    const setupData = await setup();
-    const {
-        connection,
-        wallet,
-        provider,
-        program,
-        clusterAccount,
-        mint,
-        mxePublicKey,
-    } = setupData;
-    
-
+async function createMarket(
+    setupData: SetupData
+) {
     const marketId = 1;
     const liquidityParameter = 10;
     const options = ["Yes", "No"];
     const question = `$SOL to 500?`;
 
     console.log("Creating market", marketId, "with liquidity parameter", liquidityParameter);
-    const sig = await createMarketHelper(
-        provider,
-        program,
-        clusterAccount,
+    const sig = await fundAndCreateMarket(
+        setupData.provider,
+        setupData.program,
+        setupData.clusterAccount,
         marketId,
         question,
         options,
         liquidityParameter,
-        mint
+        setupData.mint,
+        setupData.wallet,
+        setupData.ata
       );
     console.log("Market created: ", sig);
 }
@@ -143,8 +137,8 @@ async function revealProbs() {
 
 async function main() {
     const setupData = await setup();
-    await initCompDefs(setupData);    
-    //await createMarket();
+    // await initCompDefs(setupData);    
+    await createMarket(setupData);
     // await createUserPosition();
     //await sendPayment();
     // await buyShares();
