@@ -27,7 +27,7 @@ import {
   createUserPosition as createUserPositionHelper,
   createMarket as createMarketHelper,
   sendPayment as sendPaymentHelper,
-  revealResult as revealResultHelper,
+//   revealResult as revealResultHelper,
   buyShares as buySharesHelper,
   sellShares as sellSharesHelper,
   withdrawPayment as withdrawPaymentHelper,

@@ -1,87 +1,59 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::idl::arcium::types::CallbackAccount;
 
 mod states;
 mod constants;
 mod errors;
 mod contexts;
 mod events;
+mod macros;
+mod utils;
 use states::*;
-
 use constants::*;
 use errors::ErrorCode;
 use contexts::*;
 use events::*;
+use utils::*;
 
 declare_id!("7ox4o9VrNnducKJgmBFYu2yrLoYgw7dkZKH4Qjz5qUQg");
 
 #[arcium_program]
 pub mod arx_predict {
-    use arcium_client::idl::arcium::types::{CircuitSource, OffChainCircuitSource};
-
     use super::*;
 
     // INIT COMP DEF
     pub fn init_market_stats_comp_def(ctx: Context<InitMarketStatsCompDef>) -> Result<()> {
-        init_comp_def(
-            ctx.accounts, 
-            true, 
-            0, 
-            Some(CircuitSource::OffChain(OffChainCircuitSource {
-                source: INIT_MARKET_STATS_CIRCUIT.to_string(),
-                hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-            })),
-            None
-        )?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(INIT_MARKET_STATS_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_user_position_comp_def(ctx: Context<InitUserPositionCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: INIT_USER_POSITION_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(INIT_USER_POSITION_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_buy_shares_comp_def(ctx: Context<InitBuySharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: BUY_SHARES_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(BUY_SHARES_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_sell_shares_comp_def(ctx: Context<InitSellSharesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: SELL_SHARES_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(SELL_SHARES_CIRCUIT), None)?;
         Ok(())
     }
 
-    pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: REVEAL_RESULT_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+    pub fn init_reveal_market_comp_def(ctx: Context<InitRevealMarketCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_MARKET_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_reveal_probs_comp_def(ctx: Context<InitRevealProbsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: REVEAL_PROBS_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(REVEAL_PROBS_CIRCUIT), None)?;
         Ok(())
     }
 
     pub fn init_claim_rewards_comp_def(ctx: Context<InitClaimRewardsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, Some(CircuitSource::OffChain(OffChainCircuitSource {
-            source: CLAIM_REWARDS_CIRCUIT.to_string(),
-            hash: [0; 32], // Just use zeros for now - hash verification isn't enforced yet
-        })), None)?;
+        init_comp_def(ctx.accounts, true, 0, conditional_circuit_source!(CLAIM_REWARDS_CIRCUIT), None)?;
         Ok(())
     }
 
@@ -101,10 +73,11 @@ pub mod arx_predict {
         ctx.accounts.market_acc.probs = o.ciphertexts[2..4].try_into().unwrap();
         ctx.accounts.market_acc.cost = o.ciphertexts[4].try_into().unwrap();
         ctx.accounts.market_acc.nonce = o.nonce;
-
-        // let clock = Clock::get()?;
-        // let current_timestamp = clock.unix_timestamp as u64;
         ctx.accounts.market_acc.updated_at = 0;
+
+        emit!(InitMarketStatsEvent {
+            market_id: ctx.accounts.market_acc.id,
+        });
 
         Ok(())
     }
@@ -137,14 +110,14 @@ pub mod arx_predict {
             ComputationOutputs::Success(BuySharesOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
-        let amount = (o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
-
+        let amount = convert_f64_to_token_amount(o.field_2, ctx.accounts.market_acc.mint_decimals)?;
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
 
 
         if ctx.accounts.user_position_acc.balance < amount {
             emit!(BuySharesEvent {
+                market_id: ctx.accounts.market_acc.id,
                 status: 0,
                 timestamp: current_timestamp,
                 amount: amount,
@@ -161,6 +134,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.tvl += amount;
         
         emit!(BuySharesEvent {
+            market_id: ctx.accounts.market_acc.id,
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
@@ -187,13 +161,15 @@ pub mod arx_predict {
 
         if status == 0 { // Insufficient shares
             emit!(SellSharesEvent {
+                market_id: ctx.accounts.market_acc.id,
                 status: 0,
                 timestamp: current_timestamp,
                 amount: 0,
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
-        let amount = (-o.field_2 * 1e6) as u64; // TODO: Add decimals / mint check
+        
+        let amount = convert_f64_to_token_amount(-o.field_2, ctx.accounts.market_acc.mint_decimals)?;
         ctx.accounts.user_position_acc.balance += amount;
         ctx.accounts.market_acc.vote_state = o.field_0.ciphertexts[0..2].try_into().unwrap();
         ctx.accounts.market_acc.probs = o.field_0.ciphertexts[2..4].try_into().unwrap();
@@ -204,6 +180,7 @@ pub mod arx_predict {
         ctx.accounts.market_acc.tvl -= amount;
         
         emit!(SellSharesEvent {
+            market_id: ctx.accounts.market_acc.id,
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
@@ -212,17 +189,26 @@ pub mod arx_predict {
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "reveal_result")]
-    pub fn reveal_result_callback(
-        ctx: Context<RevealVotingResultCallback>,
-        output: ComputationOutputs<RevealResultOutput>,
+    #[arcium_callback(encrypted_ix = "reveal_market")]
+    pub fn reveal_market_callback(
+        ctx: Context<RevealMarketCallback>,
+        output: ComputationOutputs<RevealMarketOutput>,
     ) -> Result<()> {
         let o = match output {
-            ComputationOutputs::Success(RevealResultOutput { field_0 }) => field_0,
+            ComputationOutputs::Success(RevealMarketOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
+        ctx.accounts.market_acc.status = MarketStatus::Settled;
+        ctx.accounts.market_acc.winning_outcome = o.field_0;
+        ctx.accounts.market_acc.probs_revealed = o.field_1;
+        ctx.accounts.market_acc.votes_revealed = o.field_2;
 
-        emit!(RevealResultEvent { output: o });
+        emit!(MarketSettledEvent { 
+            market_id: ctx.accounts.market_acc.id,
+            winning_outcome: ctx.accounts.market_acc.winning_outcome,
+            probs: ctx.accounts.market_acc.probs_revealed,
+            votes: ctx.accounts.market_acc.votes_revealed,
+        });
 
         Ok(())
     }
@@ -244,6 +230,7 @@ pub mod arx_predict {
 
 
         emit!(RevealProbsEvent { 
+            market_id: ctx.accounts.market_acc.id,
             share0: o[0] as f64,
             share1: o[1] as f64,
         });
@@ -267,6 +254,7 @@ pub mod arx_predict {
         
         
         emit!(ClaimRewardsEvent {
+            market_id: ctx.accounts.user_position_acc.market_id,
             amount: amount,
         });
 
@@ -296,10 +284,11 @@ pub mod arx_predict {
     pub fn create_user_position(
         ctx: Context<CreateUserPosition>,
         computation_offset: u64,
-        _market_id: u32,
+        market_id: u32,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.create_user_position(
+            market_id,
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
@@ -342,13 +331,13 @@ pub mod arx_predict {
         )
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        computation_offset: u64,
-        id: u32,
-    ) -> Result<()> {
-        ctx.accounts.reveal_result(id, computation_offset)
-    }
+    // pub fn reveal_result(
+    //     ctx: Context<RevealVotingResult>,
+    //     computation_offset: u64,
+    //     id: u32,
+    // ) -> Result<()> {
+    //     ctx.accounts.reveal_result(id, computation_offset)
+    // }
 
     pub fn reveal_probs(
         ctx: Context<RevealProbs>,
@@ -376,10 +365,11 @@ pub mod arx_predict {
 
     pub fn settle_market(
         ctx: Context<SettleMarket>,
+        computation_offset: u64,
         id: u32,
         winner: u8,
     ) -> Result<()> {
-        ctx.accounts.settle_market(id, winner)
+        ctx.accounts.settle_market(computation_offset, id, winner)
     }
 
     pub fn claim_rewards(
@@ -388,6 +378,21 @@ pub mod arx_predict {
         _id: u32,
     ) -> Result<()> {
         ctx.accounts.claim_rewards(computation_offset)
+    }
+
+    pub fn fund_market(
+        ctx: Context<FundMarket>,
+        _id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.fund_market(amount)
+    }
+
+    pub fn claim_market_funds(
+        ctx: Context<ClaimMarketFunds>,
+        id: u32,
+    ) -> Result<()> {
+        ctx.accounts.claim_market_funds(id, ctx.bumps.vault)
     }
 
 }

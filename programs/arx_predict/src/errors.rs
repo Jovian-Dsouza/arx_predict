@@ -12,10 +12,12 @@ pub enum ErrorCode {
     ClusterNotSet,
     #[msg("Insufficient payment")]
     InsufficientPayment,
-    #[msg("Invalid liquidity parameter")]
+    #[msg("liquidity parameter must >= 10")]
     InvalidLiquidityParameter,
     #[msg("Empty option")]
     EmptyOption,
+    #[msg("Invalid question")]
+    InvalidQuestion,
     #[msg("Market inactive")]
     MarketInactive,
     #[msg("Market active")]
@@ -26,4 +28,14 @@ pub enum ErrorCode {
     MarketNotSettled,
     #[msg("Market probs reveal rate limit")]
     MarketProbsRevealRateLimit,
+    #[msg("Invalid amount: amount must be positive")]
+    InvalidAmount,
+    #[msg("Amount too large: exceeds maximum u64 value")]
+    AmountTooLarge,
+    #[msg("Market not funded")]
+    MarketNotFunded,
+    #[msg("Invalid mint")]
+    InvalidMint,
+    #[msg("Invalid outcome")]
+    InvalidOutcome,
 }

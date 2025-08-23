@@ -55,7 +55,8 @@ export async function createUserPosition(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
-  marketId: number
+  marketId: number,
+  owner: anchor.web3.Keypair
 ) {
   const userPositionNonce = randomBytes(16);
 
@@ -68,6 +69,7 @@ export async function createUserPosition(
       new anchor.BN(deserializeLE(userPositionNonce).toString())
     )
     .accountsPartial({
+      payer: owner.publicKey,
       computationAccount: getComputationAccAddress(
         program.programId,
         userPositionComputationOffset
@@ -81,6 +83,7 @@ export async function createUserPosition(
         Buffer.from(getCompDefAccOffset("init_user_position")).readUInt32LE()
       ),
     })
+    .signers([owner])
     .rpc();
 
   const finalizePollSig = await awaitComputationFinalization(
@@ -190,8 +193,28 @@ export async function sendPayment(
         ata: ata,
         mint: mint,
       })
+      .signers([owner])
       .rpc({ commitment: "confirmed" });
     return sig;
+}
+
+export async function fundMarket(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+  mint: anchor.web3.PublicKey,
+  marketId: number,
+  amount: number
+) {
+  const sig = await program.methods
+    .fundMarket(marketId, new anchor.BN(amount))
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .rpc({ commitment: "confirmed" });
+  return sig;
 }
 
 export async function withdrawPayment(
@@ -209,59 +232,49 @@ export async function withdrawPayment(
       ata: ata,
       mint: mint,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
+  return sig;
 }
 
 export async function settleMarket(
+  provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
-  owner: anchor.web3.Keypair,
   winner: number,
   marketId: number,
+  arciumClusterPubkey: PublicKey,
+  eventPromise: any
 ) {
-  const sig = await program.methods
-    .settleMarket(marketId, winner)
+  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const revealQueueSig = await program.methods
+    .settleMarket(revealComputationOffset, marketId, winner)
     .accountsPartial({
-      payer: owner.publicKey,
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        revealComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("reveal_market")).readUInt32LE()
+      ),
     })
     .rpc({ commitment: "confirmed" });
+
+  const revealFinalizeSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    revealComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+
+  const settleMarketEvent = await eventPromise;
+  return settleMarketEvent;
 }
 
-export async function revealResult(
-    provider: anchor.AnchorProvider,
-    program: Program<ArxPredict>,
-    marketId: number,
-    arciumClusterPubkey: PublicKey,
-    revealResultEventPromise: any
-) {
-      const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-      const revealQueueSig = await program.methods
-        .revealResult(revealComputationOffset, marketId)
-        .accountsPartial({
-          computationAccount: getComputationAccAddress(
-            program.programId,
-            revealComputationOffset
-          ),
-          clusterAccount: arciumClusterPubkey,
-          mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
-          compDefAccount: getCompDefAccAddress(
-            program.programId,
-            Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
-          ),
-        })
-        .rpc({ commitment: "confirmed" });
-
-      const revealFinalizeSig = await awaitComputationFinalization(
-        provider as anchor.AnchorProvider,
-        revealComputationOffset,
-        program.programId,
-        "confirmed"
-      );
-
-      const revealEvent = await revealResultEventPromise;
-      return revealEvent;
-}
 
 export async function buyShares(
   provider: anchor.AnchorProvider,
@@ -269,7 +282,7 @@ export async function buyShares(
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
   mpcPublicKey: Uint8Array,
-  owner: PublicKey,
+  owner: anchor.web3.Keypair,
   marketId: number,
   vote: number,
   shares: number,
@@ -302,8 +315,10 @@ export async function buyShares(
         program.programId,
         Buffer.from(getCompDefAccOffset("buy_shares")).readUInt32LE()
       ),
-      authority: owner,
+      //authority: owner.publicKey,
+      payer: owner.publicKey,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
 
   const finalizeSig = await awaitComputationFinalization(
@@ -379,7 +394,7 @@ export async function claimRewards(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
-  owner: PublicKey,
+  owner: anchor.web3.Keypair,
   marketId: number,
   claimRewardsEventPromise: any
 ) {
@@ -402,8 +417,10 @@ export async function claimRewards(
         program.programId,
         Buffer.from(getCompDefAccOffset("claim_rewards")).readUInt32LE()
       ),
-      authority: owner,
+      //authority: owner,
+      payer: owner.publicKey,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
 
   const finalizeSig = await awaitComputationFinalization(
@@ -414,4 +431,45 @@ export async function claimRewards(
   );
 
   const claimRewardsEvent = await claimRewardsEventPromise;
+}
+
+
+export async function claimMarketFunds(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+  mint: anchor.web3.PublicKey,
+  marketId: number,
+  claimMarketFundsEventPromise: any
+) {
+  const sig = await program.methods
+    .claimMarketFunds(marketId)
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .rpc({ commitment: "confirmed" });
+
+  const claimMarketFundsEvent = await claimMarketFundsEventPromise;
+  const claimMarketFundsAmountUsdc = claimMarketFundsEvent.amount / 1e6;
+  console.log(`Claim market funds event=> amount: ${claimMarketFundsAmountUsdc}`);
+  return sig;
+}
+
+
+export async function getUserPosition(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  marketId: number
+) {
+  const userPositionSeed = [
+    Buffer.from("user_position"),
+    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+    owner.publicKey.toBuffer(),
+  ];
+  const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
+  const userPosition = await program.account.userPosition.fetch(userPositionPDA);
+  console.log(`User position=> ${userPositionPDA.toBase58()} balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+  return userPosition;
 }

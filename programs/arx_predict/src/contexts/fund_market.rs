@@ -4,18 +4,19 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::{check_mint, states::UserPosition};
+use crate::{check_admin, check_mint};
 
 #[derive(Accounts)]
 #[instruction(_id: u32)]
-pub struct SendPayment<'info> {
+pub struct FundMarket<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     
     #[account(
-        mut,
+        init,
         seeds = [b"vault", _id.to_le_bytes().as_ref()],
         bump,
+        payer=payer,
         token::mint = mint,
         token::authority = vault
     )]
@@ -33,24 +34,18 @@ pub struct SendPayment<'info> {
     )]
     pub mint: Account<'info, Mint>,
 
-    #[account(
-        mut,
-        seeds = [b"user_position", _id.to_le_bytes().as_ref(), payer.key().as_ref()],
-        bump
-    )]
-    pub user_position_acc: Account<'info, UserPosition>,
-
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-impl<'info> SendPayment<'info> {
-    pub fn send_payment(
+impl<'info> FundMarket<'info> {
+    pub fn fund_market(
         &mut self,
         amount: u64
     ) -> Result<()> {
         check_mint!(self.mint.key());
+        check_admin!(self.payer.key());
         let transfer_accounts = TransferChecked {
             from: self.ata.to_account_info(),
             mint: self.mint.to_account_info(),
@@ -66,7 +61,6 @@ impl<'info> SendPayment<'info> {
             self.mint.decimals
         )?;
 
-        self.user_position_acc.balance += amount;
         Ok(())
     }
 } 

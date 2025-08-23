@@ -4,12 +4,11 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::{check_mint, states::UserPosition};
-use crate::ErrorCode;
+use crate::{check_mint, events::ClaimMarketFundsEvent, states::{MarketAccount, MarketStatus}, ErrorCode};
 
 #[derive(Accounts)]
 #[instruction(id: u32)]
-pub struct WithdrawPayment<'info> {
+pub struct ClaimMarketFunds<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     
@@ -34,28 +33,44 @@ pub struct WithdrawPayment<'info> {
     )]
     pub mint: Account<'info, Mint>,
 
+    /// CHECK: Poll authority pubkey
     #[account(
-        mut,
-        seeds = [b"user_position", id.to_le_bytes().as_ref(), payer.key().as_ref()],
-        bump
+        address = market_acc.authority,
     )]
-    pub user_position_acc: Account<'info, UserPosition>,
+    pub authority: UncheckedAccount<'info>,
+    #[account(
+        seeds = [b"market", id.to_le_bytes().as_ref()],
+        bump = market_acc.bump,
+        has_one = authority
+    )]
+    pub market_acc: Account<'info, MarketAccount>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-impl<'info> WithdrawPayment<'info> {
-    pub fn withdraw_payment(
+impl<'info> ClaimMarketFunds<'info> {
+    pub fn claim_market_funds(
         &mut self,
-        amount: u64,
         id: u32, 
         bump: u8
     ) -> Result<()> {
+        require!(self.market_acc.status == MarketStatus::Settled, ErrorCode::MarketNotSettled);
+        require!(
+            self.payer.key() == self.market_acc.authority,
+            ErrorCode::InvalidAuthority
+        );
         check_mint!(self.mint.key());
-        require!(self.user_position_acc.balance >= amount, ErrorCode::InsufficientBalance);
-        self.user_position_acc.balance -= amount;
+
+        let winning_amount  = match self.market_acc.winning_outcome {
+            0 => self.market_acc.votes_revealed[0], //TODO: shares / mint decimals scale 
+            1 => self.market_acc.votes_revealed[1], //TODO: shares / mint decimals scale
+            _ => return Err(ErrorCode::InvalidOutcome.into()),
+        };
+
+        let amount = self.market_acc.tvl - winning_amount;
+        require!(amount > 0, ErrorCode::InsufficientBalance);
         let transfer_accounts = TransferChecked {
             from: self.vault.to_account_info(),
             mint: self.mint.to_account_info(),
@@ -73,6 +88,13 @@ impl<'info> WithdrawPayment<'info> {
             ),
             amount,
             self.mint.decimals
-        )
+        )?;
+        self.market_acc.tvl = 0;
+
+        emit!(ClaimMarketFundsEvent {
+            market_id: id,
+            amount: amount,
+        });
+        Ok(())
     }
 } 

@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
+use crate::{check_admin, constants::LN_2_SCALED, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Token, Mint, TokenAccount}
@@ -68,10 +68,9 @@ pub struct CreateMarket<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 
     #[account(
-        init,
+        mut,
         seeds = [b"vault", id.to_le_bytes().as_ref()],
         bump,
-        payer=payer,
         token::mint = mint,
         token::authority = vault
     )]
@@ -95,11 +94,19 @@ impl<'info> CreateMarket<'info> {
         bump: u8,
     ) -> Result<()> {
         // Validations
-        require!(liquidity_parameter > 0, ErrorCode::InvalidLiquidityParameter);
+        require!(liquidity_parameter >= 10, ErrorCode::InvalidLiquidityParameter);
         require!(self.market_acc.status == MarketStatus::Inactive, ErrorCode::MarketInactive);
+        require!(options.len() == MAX_OPTIONS, ErrorCode::InvalidNumOptions);
+        require!(!question.is_empty(), ErrorCode::InvalidQuestion);
+        check_admin!(self.payer.key());
         for option in &options {
             require!(!option.is_empty(), ErrorCode::EmptyOption);
         }
+        
+        //Market maker has paid  b*ln(MAX_OPTIONS)
+        // Note: this assumes that fund_market and this is in the same instruction
+        let expected_funding_amount = ((liquidity_parameter as u128 * LN_2_SCALED as u128) / 10u128.pow(16)) as u64;
+        require!(self.vault.amount >= expected_funding_amount, ErrorCode::MarketNotFunded);
 
         self.market_acc.id = id;
         self.market_acc.question = question;
@@ -112,10 +119,12 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.cost = [0; 32];
         self.market_acc.liquidity_parameter = liquidity_parameter;
         self.market_acc.status = MarketStatus::Active;
-        self.market_acc.tvl = 0;
+        self.market_acc.tvl = self.vault.amount;
         self.market_acc.probs_revealed = [0.0; MAX_OPTIONS];
+        self.market_acc.mint = self.mint.key();
+        self.market_acc.mint_decimals = self.mint.decimals;
 
-        //TODO: Market maker pays b*ln(MAX_OPTIONS)
+        
 
         let args = vec![
             Argument::PlaintextU128(nonce),

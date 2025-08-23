@@ -77,9 +77,9 @@ pub struct InitSellSharesCompDef<'info> {
 }
 
 
-#[init_computation_definition_accounts("reveal_result", payer)]
+#[init_computation_definition_accounts("reveal_market", payer)]
 #[derive(Accounts)]
-pub struct InitRevealResultCompDef<'info> {
+pub struct InitRevealMarketCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(

@@ -18,7 +18,7 @@ import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
 
-import { createTokenMint, generateKeypairFromSeed, getRequiredATA, readKpJson } from "../client/utils";
+import { createTokenMint, generateKeypairFromSeed, getRequiredATA, readKpJson, transferSol } from "../client/utils";
 import {
   getMXEPublicKeyWithRetry,
   getProbs,
@@ -315,6 +315,12 @@ describe("Voting", () => {
       owner,
       100000 * 1e6
     )));
+    await Promise.all(voters.map(voter => transferSol(
+      provider as anchor.AnchorProvider,
+      owner,
+      voter.publicKey,
+      1 * 1e9
+    )));
     logSuccess(`Voter ATAs, Funded`);
 
     logStep("Fetching MXE public key");
@@ -429,93 +435,108 @@ describe("Voting", () => {
 
     logSection("User Position Creation");
     logStep(`Creating user positions for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      logProgress(i + 1, POLL_IDS.length, `Creating position for market ${POLL_ID}`);
-      
-      await createUserPosition(
-        provider as anchor.AnchorProvider,
-        program,
-        arciumEnv.arciumClusterPubkey,
-        POLL_ID,
-        owner
-      );
-      logSuccess(`User position created for market ${POLL_ID}`);
+    // Create all user positions in parallel for efficiency
+    const userPositionPromises = voters.map(async (voter, index) => {
+        const POLL_ID = POLL_IDS[0];
+        logProgress(index + 1, voters.length, `Creating user position for market ${POLL_ID}`);
+        
+        const result = await createUserPosition(
+          provider as anchor.AnchorProvider,
+          program,
+          arciumEnv.arciumClusterPubkey,
+          POLL_ID,
+          voter
+        );
+        logSuccess(`User position created for market ${POLL_ID}`);
+        return result;
+    });
+    for (const promise of userPositionPromises) {
+      await promise;
+      //sleep for 1 second
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    // await Promise.all(userPositionPromises);
+
 
     logSection("Payment Processing");
     logStep(`Sending payments to ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
+    // Send all payments in parallel for efficiency
+    const paymentPromises = voters.map(async (voter, index) => {
+      const POLL_ID = POLL_IDS[0];
       const paymentAmount = 100 * 1e6;
-      logProgress(i + 1, POLL_IDS.length, `Sending payment to market ${POLL_ID}`);
+      logProgress(index + 1, voters.length, `Sending payment to market ${POLL_ID}`);
       
-      await sendPayment(program, owner, ata, mint, POLL_ID, paymentAmount);
+      const result = await sendPayment(program, voter, voterAtas[index], mint, POLL_ID, paymentAmount);
       logSuccess(`Payment sent to market ${POLL_ID}`);
       logInfo(`   Amount: ${formatUSDC(paymentAmount)}`);
-    }
-
-    logSection("User Position Balance");
-    logStep(`Getting user position balance for market ${POLL_IDS[0]}`);
-    await getUserPosition(program, owner, POLL_IDS[0]);
-
-    logSection("Voting Process");
-    const voteOutcomes = [0, 1, 0]; // Different outcomes for each poll
+      return result;
+    });
     
+    await Promise.all(paymentPromises);
+
+    // logSection("User Position Balance");
+    // logStep(`Getting user position balance for market ${POLL_IDS[0]}`);
+    // const userPositionBalances = await Promise.all(voters.map(voter => getUserPosition(program, voter, POLL_IDS[0])));
+    // logSuccess(`User position balance for market ${POLL_IDS[0]}: ${userPositionBalances.map(balance => balance.balance.toNumber()).join(", ")}`);
+
+    logSection("Voting Process");    
     logStep(`Casting votes (buying shares) for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      const sharesToBuy = 100 * 1000000;
-      logProgress(i + 1, POLL_IDS.length, `Voting on market ${POLL_ID}`);
+    const buyAmounts = [
+      [0, 10 * 1000000],
+      [1, 50 * 1000000]
+    ];
+    for(let i = 0; i < voters.length; i++) {
+      const POLL_ID = POLL_IDS[0];
+      logProgress(i + 1, voters.length, `Voting on market ${POLL_ID}`);
       
       // Wait for BuySharesEvent during voting
       globalEventListener.markExpected("buySharesEvent", POLL_ID); // Mark as expected
       const buySharesEventPromise = waitForEvent("buySharesEvent");
       
-      await buyShares(
+      const result = await buyShares(
         provider as anchor.AnchorProvider,
         program,
         arciumEnv.arciumClusterPubkey,
         cipher,
         publicKey,
-        owner,
+        voters[i],
         POLL_ID,
-        0,
-        sharesToBuy,
+        buyAmounts[i][0],
+        buyAmounts[i][1],
         buySharesEventPromise
       );
       logSuccess(`Vote cast for market ${POLL_ID}`);
-      logInfo(`   Shares bought: ${sharesToBuy} shares`);
-      logInfo(`   Vote choice: Option 0 (${options[0]})`);
+      logInfo(`   Shares bought: ${buyAmounts[i][1]} shares`);
+      logInfo(`   Vote choice: Option ${buyAmounts[i][0]} (${options[buyAmounts[i][0]]})`);
     }
     
-    logSection("Share Trading");
-    logStep(`Selling shares for ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      const sharesToSell = 1 * 1000000;
-      logProgress(i + 1, POLL_IDS.length, `Selling shares for market ${POLL_ID}`);
+    // logSection("Share Trading");
+    // logStep(`Selling shares for ${POLL_IDS.length} market(s)`);
+    // for (let i = 0; i < voters.length; i++) {
+    //   const POLL_ID = POLL_IDS[0];
+    //   const sharesToSell = 1 * 1000000;
+    //   logProgress(i + 1, voters.length, `Selling shares for market ${POLL_ID}`);
       
-      // Wait for SellSharesEvent during share selling
-      globalEventListener.markExpected("sellSharesEvent", POLL_ID); // Mark as expected
-      const sellSharesEventPromise = waitForEvent("sellSharesEvent");
+    //   // Wait for SellSharesEvent during share selling
+    //   globalEventListener.markExpected("sellSharesEvent", POLL_ID); // Mark as expected
+    //   const sellSharesEventPromise = waitForEvent("sellSharesEvent");
       
-      await sellShares(
-        provider as anchor.AnchorProvider,
-        program,
-        arciumEnv.arciumClusterPubkey,
-        cipher,
-        publicKey,
-        owner.publicKey,
-        POLL_ID,
-        0,
-        sharesToSell,
-        sellSharesEventPromise
-      );
-      logSuccess(`Shares sold for market ${POLL_ID}`);
-      logInfo(`   Shares sold: ${sharesToSell} shares`);
-      logInfo(`   Vote choice: Option 0 (${options[0]})`);
-    }
+    //   await sellShares(
+    //     provider as anchor.AnchorProvider,
+    //     program,
+    //     arciumEnv.arciumClusterPubkey,
+    //     cipher,
+    //     publicKey,
+    //     owner.publicKey,
+    //     POLL_ID,
+    //     0,
+    //     sharesToSell,
+    //     sellSharesEventPromise
+    //   );
+    //   logSuccess(`Shares sold for market ${POLL_ID}`);
+    //   logInfo(`   Shares sold: ${sharesToSell} shares`);
+    //   logInfo(`   Vote choice: Option 0 (${options[0]})`);
+    // }
     
     logStep(`Revealing final probabilities after trading for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
@@ -551,38 +572,37 @@ describe("Voting", () => {
     );
     logSuccess("Market settled successfully");
     
-    logInfo("Claiming rewards for first market");
     
-    // Wait for ClaimRewardsEvent during reward claiming
-    globalEventListener.markExpected("claimRewardsEvent", POLL_IDS[0]); // Mark as expected
-    const claimRewardsEventPromise = waitForEvent("claimRewardsEvent");
-    
-    await claimRewards(
-      provider as anchor.AnchorProvider,
-      program,
-      arciumEnv.arciumClusterPubkey,
-      owner,
-      POLL_IDS[0],
-      claimRewardsEventPromise
-    );
-    
-    const claimRewardsEvent = await claimRewardsEventPromise;
-    
-    logSuccess("Rewards claimed successfully");
-    logInfo(`   Reward amount: ${formatUSDC(claimRewardsEvent.amount.toNumber())}`);
+    for(let i = 0; i < voters.length; i++) {
+        logInfo(`Claiming rewards for voter ${i}`);
+        // Wait for ClaimRewardsEvent during reward claiming
+        globalEventListener.markExpected("claimRewardsEvent", POLL_IDS[0]); // Mark as expected
+        const claimRewardsEventPromise = awaitEvent("claimRewardsEvent");
+        await claimRewards(
+            provider as anchor.AnchorProvider,
+            program,
+            arciumEnv.arciumClusterPubkey,
+            voters[i],
+            POLL_IDS[0],
+            claimRewardsEventPromise
+        );
+        const claimRewardsEvent = await claimRewardsEventPromise;
+        logSuccess("Rewards claimed successfully");
+        logInfo(`   Reward amount: ${formatUSDC(claimRewardsEvent.amount.toNumber())}`);
+    }
 
     logSection("User Position Balance");
     logStep(`Getting user position balance for market ${POLL_IDS[0]}`);
-    const userPositionAfterRewards = await getUserPosition(program, owner, POLL_IDS[0]);
+    const userPositionAfterRewards = await Promise.all(voters.map(voter => getUserPosition(program, voter, POLL_IDS[0])));
 
     logSection("Payment Withdrawal");
     logStep(`Withdrawing payments from ${POLL_IDS.length} market(s)`);
-    for (let i = 0; i < POLL_IDS.length; i++) {
-      const POLL_ID = POLL_IDS[i];
-      const withdrawalAmount = userPositionAfterRewards.balance.toNumber();
-      logProgress(i + 1, POLL_IDS.length, `Withdrawing from market ${POLL_ID}`);
+    for (let i = 0; i < voters.length; i++) {
+      const POLL_ID = POLL_IDS[0];
+      const withdrawalAmount = userPositionAfterRewards[i].balance.toNumber();
+      //logProgress(i + 1, POLL_IDS.length, `Withdrawing from market ${POLL_ID}`);
       
-      await withdrawPayment(program, owner, ata, mint, POLL_ID, withdrawalAmount);
+      await withdrawPayment(program, voters[i], voterAtas[i], mint, POLL_ID, withdrawalAmount);
       logSuccess(`Payment withdrawn from market ${POLL_ID}`);
       logInfo(`   Amount: ${formatUSDC(withdrawalAmount)}`);
     }

@@ -18,10 +18,12 @@ pub struct MarketAccount {
     pub options: [String; MAX_OPTIONS],
     pub probs_revealed: [f64; MAX_OPTIONS],
     pub updated_at: u64,
-    pub expiry_at: u64,
     pub winning_outcome: u8,
     pub status: MarketStatus,
     pub tvl: u64,
+    pub mint: Pubkey,
+    pub mint_decimals: u8,
+    pub votes_revealed: [u64; MAX_OPTIONS],
 }
 
 #[account]
@@ -31,6 +33,7 @@ pub struct UserPosition {
     pub nonce: u128,
     pub shares: [[u8; 32]; MAX_OPTIONS],
     pub balance: u64,    
+    pub market_id: u32,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, InitSpace)]

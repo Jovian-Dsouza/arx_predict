@@ -6,7 +6,7 @@ use crate::{UserPosition, MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSE
 
 #[queue_computation_accounts("init_user_position", payer)]
 #[derive(Accounts)]
-#[instruction(computation_offset: u64, _market_id: u32)]
+#[instruction(computation_offset: u64, market_id: u32)]
 pub struct CreateUserPosition<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -56,7 +56,7 @@ pub struct CreateUserPosition<'info> {
         init,
         payer = payer,
         space = 8 + UserPosition::INIT_SPACE,
-        seeds = [b"user_position", _market_id.to_le_bytes().as_ref(), payer.key().as_ref()],
+        seeds = [b"user_position", market_id.to_le_bytes().as_ref(), payer.key().as_ref()],
         bump
     )]
     pub user_position_acc: Account<'info, UserPosition>,
@@ -65,6 +65,7 @@ pub struct CreateUserPosition<'info> {
 impl<'info> CreateUserPosition<'info> {
     pub fn create_user_position(
         &mut self,
+        market_id: u32,
         nonce: u128,
         computation_offset: u64,
         bump: u8,
@@ -73,6 +74,7 @@ impl<'info> CreateUserPosition<'info> {
         self.user_position_acc.nonce = nonce;
         self.user_position_acc.shares = [[0; 32]; MAX_OPTIONS];
         self.user_position_acc.balance = 0;
+        self.user_position_acc.market_id = market_id;
         let args = vec![Argument::PlaintextU128(nonce)];
 
         queue_computation(

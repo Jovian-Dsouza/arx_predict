@@ -4,6 +4,9 @@ use arcis_imports::*;
 mod circuits {
     use arcis_imports::*;
 
+    const SHARES_PER_UNIT: u64 = 1000000;
+    const SHARES_PER_UNIT_INV_F64: f64 = 1.0f64 / SHARES_PER_UNIT as f64;
+    
     pub struct VoteStats {
         option0: u64,
         option1: u64,
@@ -150,9 +153,9 @@ mod circuits {
         // let exp1 = (vote_stats.option1 as f64 / *liquidity_parameter as f64).exp();
         // let sum_exp = exp0 + exp1;
 
-        let liquidity_inverse = 1.0 / *liquidity_parameter as f64;
-        let x0 = vote_stats.option0 as f64 * liquidity_inverse;
-        let x1 = vote_stats.option1 as f64 * liquidity_inverse;
+        let liquidity_inverse = 1.0f64 / *liquidity_parameter as f64;
+        let x0 = ((vote_stats.option0 as f64) * SHARES_PER_UNIT_INV_F64) * liquidity_inverse;
+        let x1 = ((vote_stats.option1 as f64) * SHARES_PER_UNIT_INV_F64) * liquidity_inverse;
         
         // Subtract max for numerical stability
         let max_x = x0.max(x1);
@@ -170,19 +173,6 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> u8 {
-        let vote_stats = vote_stats_ctxt.to_arcis();
-        let mut ans = 0;
-        if vote_stats.option0 > vote_stats.option1 {
-            ans = 0;
-        } else {
-            ans = 1;
-        }
-
-        ans.reveal()
-    }
-
-    #[instruction]
     pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
         let probs = probs_ctxt.to_arcis();
         let probabilities = [probs.probs.option0.reveal(), probs.probs.option1.reveal()];
@@ -190,22 +180,32 @@ mod circuits {
     }
 
     #[instruction]
+    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>, winner: u8) -> (
+        u8, // winning outcome
+        [f64; 2], // probs
+        [u64; 2], // vote stats
+    ) {
+        let market_stats = market_stats_ctxt.to_arcis();
+        let probs = [market_stats.probs.option0.reveal(), market_stats.probs.option1.reveal()];
+        let vote_stats = [market_stats.vote_stats.option0.reveal(), market_stats.vote_stats.option1.reveal()];
+        (winner.reveal(), probs, vote_stats)
+    }
+
+    #[instruction]
     pub fn claim_rewards(
         winning_outcome: u8,
-        market_stats_ctxt: Enc<Mxe, MarketStats>,
         user_position_ctxt: Enc<Mxe, UserPosition>,
     ) -> (
         Enc<Mxe, UserPosition>, 
         u64, // Amount to claim
     ) {
-        let market_stats = market_stats_ctxt.to_arcis();
         let mut user_position = user_position_ctxt.to_arcis();
 
         let mut reward: u64 = 0;
         if winning_outcome == 0 {
-            reward = user_position.option0 * (1000000u64);
+            reward = (user_position.option0 * (1000000u64)) / SHARES_PER_UNIT; //num shares * 1 token * 1e6 / shares_per_unit
         } else if winning_outcome == 1 {
-            reward = user_position.option1 * (1000000u64);
+            reward = (user_position.option1 * (1000000u64)) / SHARES_PER_UNIT; //num shares * 1 token * 1e6 / shares_per_unit
         }
         user_position.option0 = 0;
         user_position.option1 = 0;
