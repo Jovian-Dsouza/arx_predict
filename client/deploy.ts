@@ -21,6 +21,7 @@ import {
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
 import { SetupData } from "./setup";
+import { calculateCost } from "./lmsr";
 
 
 async function createMarket(
@@ -180,7 +181,7 @@ async function getMarketStats(
 
 async function main() {
     const marketId = 1;
-    const setupData = await setup();
+    // const setupData = await setup();
     // await initCompDefs(setupData);    
     // await createMarket(setupData, marketId);
 
@@ -188,8 +189,11 @@ async function main() {
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
 
-    const marketStats = await getMarketStats(setupData, marketId);
-    console.log("Market stats: ", marketStats);
+    // const marketStats = await getMarketStats(setupData, marketId);
+    // console.log("Market stats: ", marketStats);
+
+    const cost = calculateCost(10, [1000000, 0]);
+    console.log("Cost: ", cost);
 
     // await sendPayment();
     // await buyShares(setupData);
