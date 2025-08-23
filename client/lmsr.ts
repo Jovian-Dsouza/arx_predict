@@ -1,6 +1,6 @@
 const SHARES_SCALE = 1e6;
 const MAX_ITERATIONS = 20;
-const COST_TOLERANCE = 0.01 * 1e6;
+const COST_TOLERANCE = 0.0001 * 1e6;
 const UPPER_BOUND = 1000.0 * 1e6;
 
 
@@ -14,7 +14,7 @@ export function calculateCost(
     let e1 = Math.exp(x1-x_max);
     let e2 = Math.exp(x2-x_max);
     const cost = liquidityParameter * (x_max + Math.log(e1 + e2));
-    return Math.round(cost * 1e6);
+    return cost * 1e6;
 }
 
 export function calculateSharesForAmount(
@@ -38,7 +38,7 @@ export function calculateSharesForAmount(
     for (let i = 0; i < MAX_ITERATIONS; i++) {
         const mid = (low + high) / 2.0;
 
-        let finalshares = vote === 0 ? [shares[1] + mid, shares[0]] : [shares[0], shares[1] + mid];
+        let finalshares = vote === 0 ? [shares[0] + mid, shares[1]] : [shares[0], shares[1] + mid];
         const cost = Math.abs(calculateCost(liquidityParameter, finalshares) - currentCost);
         const costDiff = Math.abs(amount - cost);
         
@@ -54,6 +54,12 @@ export function calculateSharesForAmount(
         }
         
         if (costDiff < COST_TOLERANCE) { // Within tolerance
+            console.log("==> Within tolerance");
+            console.log("==> Best quantity: ", bestQuantity);
+            console.log("==> Best cost diff: ", bestCostDiff);
+            console.log("==> Cost: ", cost);
+            console.log("==> Amount: ", amount);
+
             break;
         }
     }

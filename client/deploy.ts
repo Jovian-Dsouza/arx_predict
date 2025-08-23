@@ -173,7 +173,7 @@ async function getMarketStats(
         console.log("==> Latest market data fetched");
         voteStats = [probsData.votes[0].toNumber(), probsData.votes[1].toNumber()];
     } else{
-        throw new Error("No probs data found");
+        // throw new Error("No probs data found");
         console.log("==> Market data fetched");
         voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];
     }
@@ -250,7 +250,7 @@ async function main() {
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
-    await buySharesInAmount(setupData, marketId, 0, 1 * 1e6);
+    await buySharesInAmount(setupData, marketId, 1, 1 * 1e6);
 
     // const userPosition = await getUserPosition(setupData.program, setupData.wallet, marketId);
     // console.log("User position: ", userPosition);
@@ -261,8 +261,8 @@ async function main() {
     // const cost = calculateCost(10, [1000000, 0]);
     // console.log("Cost: ", cost / 1e6);
 
-    // const shares = calculateSharesForAmount(10, [0, 0], 0, 100 * 1e6);
-    // console.log("Shares: ", shares / 1e6);
+    // const shares = calculateSharesForAmount(10, [10704587, 8880614], 0, 1.184921 * 1e6);
+    // console.log("Shares: ", shares / 1e6);  //2.0751953125
 
     // await sendPayment();
     // await buyShares(setupData);
