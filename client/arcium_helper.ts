@@ -418,7 +418,7 @@ export async function buyShares(
 
   const buySharesEvent = await buySharesEventPromise;
   const buySharesAmountUsdc = buySharesEvent.amount / 1e6;
-  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}`);
+  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}, tvl: ${buySharesEvent.tvl / 1e6} USDC`);
   return buySharesEvent;
 }
 
@@ -474,7 +474,7 @@ export async function sellShares(
 
   const sellSharesEvent = await sellSharesEventPromise;
   const sellSharesAmountUsdc = sellSharesEvent.amount / 1e6;
-  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}`);
+  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}, tvl: ${sellSharesEvent.tvl / 1e6} USDC`);
   return finalizeSig;
 }
 
