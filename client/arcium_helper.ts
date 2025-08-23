@@ -232,7 +232,9 @@ export async function withdrawPayment(
       ata: ata,
       mint: mint,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
+  return sig;
 }
 
 export async function settleMarket(
@@ -280,7 +282,7 @@ export async function buyShares(
   arciumClusterPubkey: PublicKey,
   cipher: RescueCipher,
   mpcPublicKey: Uint8Array,
-  owner: PublicKey,
+  owner: anchor.web3.Keypair,
   marketId: number,
   vote: number,
   shares: number,
@@ -313,8 +315,10 @@ export async function buyShares(
         program.programId,
         Buffer.from(getCompDefAccOffset("buy_shares")).readUInt32LE()
       ),
-      authority: owner,
+      //authority: owner.publicKey,
+      payer: owner.publicKey,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
 
   const finalizeSig = await awaitComputationFinalization(
@@ -390,7 +394,7 @@ export async function claimRewards(
   provider: anchor.AnchorProvider,
   program: Program<ArxPredict>,
   arciumClusterPubkey: PublicKey,
-  owner: PublicKey,
+  owner: anchor.web3.Keypair,
   marketId: number,
   claimRewardsEventPromise: any
 ) {
@@ -413,8 +417,10 @@ export async function claimRewards(
         program.programId,
         Buffer.from(getCompDefAccOffset("claim_rewards")).readUInt32LE()
       ),
-      authority: owner,
+      //authority: owner,
+      payer: owner.publicKey,
     })
+    .signers([owner])
     .rpc({ commitment: "confirmed" });
 
   const finalizeSig = await awaitComputationFinalization(
@@ -463,9 +469,7 @@ export async function getUserPosition(
     owner.publicKey.toBuffer(),
   ];
   const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
-  console.log(`User position PDA=> ${userPositionPDA.toBase58()}`);
   const userPosition = await program.account.userPosition.fetch(userPositionPDA);
-  // console.log(`User position=>: ${JSON.stringify(userPosition)}`);
-  console.log(`User position=> balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+  console.log(`User position=> ${userPositionPDA.toBase58()} balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
   return userPosition;
 }
