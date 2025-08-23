@@ -52,16 +52,15 @@ async function createUserPosition(
     owner: anchor.web3.Keypair
 ) {
     console.log("Creating user position for market", marketId);
-    try{
-        const existingUserPosition = await getUserPosition(
-            setupData.program,
-            owner,
-            marketId
-        );
+    const existingUserPosition = await getUserPosition(
+        setupData.program,
+        owner,
+        marketId
+    );
+    if (!existingUserPosition) {
         return;
-    } catch (e) {
-        console.error("Error creating user position: ", e);
     }
+
     const sig = await createUserPositionHelper(
         setupData.provider,
         setupData.program,
@@ -86,6 +85,27 @@ async function sendPayment() {
     console.log("ATA: ", ata.toBase58());
     const sig = await sendPaymentHelper(program, wallet, ata, mint, marketId, paymentAmount);
     console.log("Payment sent: ", sig);
+}
+
+async function calculateSharesAndBuy(
+    setupData: SetupData,
+    marketId: number,
+    owner: anchor.web3.Keypair,
+    vote: number,
+    sharesToBuy: number
+) {
+    const userPosition = await getUserPosition(
+        setupData.program,
+        owner,
+        marketId
+    );
+    if (!userPosition) {
+        return;
+    }
+
+    
+
+
 }
 
 
@@ -150,7 +170,8 @@ async function main() {
     // await createMarket(setupData);
 
     // Frontend
-    await createUserPosition(setupData, marketId, setupData.wallet);
+    // await createUserPosition(setupData, marketId, setupData.wallet);
+    await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
     // await sendPayment();
     // await buyShares();
     // await revealProbs();

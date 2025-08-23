@@ -540,13 +540,18 @@ export async function getUserPosition(
   owner: anchor.web3.Keypair,
   marketId: number
 ) {
-  const userPositionSeed = [
-    Buffer.from("user_position"),
-    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
-    owner.publicKey.toBuffer(),
-  ];
-  const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
-  const userPosition = await program.account.userPosition.fetch(userPositionPDA);
-  console.log(`User position=> ${userPositionPDA.toBase58()} marketId: ${userPosition.marketId}, balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
-  return userPosition;
+  try {
+    const userPositionSeed = [
+      Buffer.from("user_position"),
+      new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+      owner.publicKey.toBuffer(),
+    ];
+    const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
+    const userPosition = await program.account.userPosition.fetch(userPositionPDA);
+    console.log(`User position=> ${userPositionPDA.toBase58()} marketId: ${userPosition.marketId}, balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+    return userPosition;
+  } catch (e) {
+    console.error("Error getting user position: ", e);
+    return null;
+  }
 }
