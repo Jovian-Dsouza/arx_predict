@@ -16,6 +16,7 @@ import {
   getMXEPublicKeyWithRetry,
   fundAndCreateMarket,
   getUserPosition,
+  getMarketData,
 } from "./arcium_helper";
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
@@ -23,9 +24,9 @@ import { SetupData } from "./setup";
 
 
 async function createMarket(
-    setupData: SetupData
+    setupData: SetupData,
+    marketId: number
 ) {
-    const marketId = 1;
     const liquidityParameter = 10;
     const options = ["Yes", "No"];
     const question = `$SOL to 500?`;
@@ -57,10 +58,12 @@ async function createUserPosition(
         owner,
         marketId
     );
-    if (!existingUserPosition) {
+    if (existingUserPosition) {
+        console.log("User position already exists");
         return;
     }
 
+    console.log("user position does not exist");
     const sig = await createUserPositionHelper(
         setupData.provider,
         setupData.program,
@@ -110,8 +113,7 @@ async function calculateSharesAndBuy(
 
 
 
-async function buyShares() {
-    const setupData = await setup();
+async function buyShares(setupData: SetupData) {
     const {
         program,
         provider,
@@ -124,7 +126,7 @@ async function buyShares() {
     } = setupData;
 
     const marketId = 1;
-    const sharesToBuy = 3;
+    const sharesToBuy = 1 * 1e6;
     const vote = 0;
     const ata = await getRequiredATA(provider, wallet, mint, wallet, wallet, 0);
 
@@ -143,38 +145,55 @@ async function buyShares() {
     console.log("Shares bought: ", sig);
 }
 
-async function revealProbs() {
-    const setupData = await setup();
-    const {
-        program,
-        provider,
-        clusterAccount,
-        awaitEvent,
-    } = setupData;
+async function getVoteStats(
+    setupData: SetupData,
+    marketId: number
+) {
+    let voteStats = [0, 0];
+    try {
+        const data = await getProbsHelper(
+            setupData.provider as anchor.AnchorProvider,
+            setupData.program,
+            marketId,
+            setupData.clusterAccount,
+            setupData.awaitEvent("revealProbsEvent")
+        );
+        voteStats = [data.votes[0].toNumber(), data.votes[1].toNumber()];
+        return voteStats;
+    } catch (error) {
+        if (error.error.errorCode.code === "MarketProbsRevealRateLimit") {
+            console.log("Market reveal rate limit");
+        }
+        else {
+            console.error("Error getting probs: ", error);
+        }
+    }
 
-    const marketId = 1;
-    const probs = await getProbsHelper(
-        provider as anchor.AnchorProvider,
-        program,
-        marketId,
-        clusterAccount,
-        awaitEvent("revealProbsEvent")
+    // Fallback to store market data
+    const marketData = await getMarketData(
+        setupData.program,
+        marketId
     );
-    console.log("Probs: ", probs);
+    voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];    
+    return voteStats;
 }
 
 async function main() {
     const marketId = 1;
     const setupData = await setup();
     // await initCompDefs(setupData);    
-    // await createMarket(setupData);
+    // await createMarket(setupData, marketId);
 
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
-    await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
+    // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
+
+    const voteStats = await getVoteStats(setupData, marketId);
+    console.log("Vote stats: ", voteStats);
+
     // await sendPayment();
-    // await buyShares();
-    // await revealProbs();
+    // await buyShares(setupData);
+    // await revealProbs(setupData, marketId);
 
 }
 

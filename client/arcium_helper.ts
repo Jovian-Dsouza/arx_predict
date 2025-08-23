@@ -92,6 +92,7 @@ export async function createUserPosition(
     program.programId,
     "confirmed"
   );
+  return finalizePollSig;
 }
 
 export async function getProbs(
@@ -555,3 +556,19 @@ export async function getUserPosition(
     return null;
   }
 }
+
+
+export async function getMarketData(
+  program: Program<ArxPredict>,
+  marketId: number
+) {
+  const marketDataSeed = [
+    Buffer.from("market"),
+    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+  ];
+  const marketDataPDA = PublicKey.findProgramAddressSync(marketDataSeed, program.programId)[0];
+  const marketData = await program.account.marketAccount.fetch(marketDataPDA);
+  // console.log(`Market data=> ${JSON.stringify(marketData)}`);
+  return marketData;
+}
+
