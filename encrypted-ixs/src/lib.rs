@@ -174,7 +174,6 @@ mod circuits {
 
     #[instruction]
     pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
-        //TODO: optimizatoin to not pass the whole market stats
         let probs = probs_ctxt.to_arcis();
         let probabilities = [probs.probs.option0.reveal(), probs.probs.option1.reveal()];
         probabilities
