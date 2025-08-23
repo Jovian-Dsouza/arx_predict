@@ -191,6 +191,7 @@ async function buySharesInAmount(
     vote: number,
     amount: number
 ) {
+    const SLIPPAGE = 1.05
     const marketStats = await getMarketStats(setupData, marketId);
     console.log("Market stats: ", marketStats.voteStats[0]/1e6, marketStats.voteStats[1]/1e6, marketStats.liquidityParameter);
     const userPositionInital = await getUserPosition(setupData.program, setupData.wallet, marketId);
@@ -202,9 +203,11 @@ async function buySharesInAmount(
     );
     console.log(`Buying for vote ${vote} in amount ${amount / 1e6} USDC will give approx ${shares / 1e6} shares`);
 
-    let amountToSend = amount;
+    const amountWithSlippage = amount * SLIPPAGE;
+    let amountToSend = amountWithSlippage;
     if(userPositionInital) {
-        amountToSend = Math.max(0, amount - userPositionInital.balance.toNumber());
+        amountToSend = Math.max(0, amountWithSlippage - userPositionInital.balance.toNumber());
+        amountToSend = Math.min(amountToSend, 1 * 1e6); //Minimum amount to send is 1 USDC
         console.log(`User position already has ${userPositionInital.balance.toNumber() / 1e6} USDC sending ${amountToSend / 1e6} USDC`);
     }
     
