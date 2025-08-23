@@ -31,3 +31,4 @@ pub const REVEAL_RESULT_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypin
 pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/sell_shares_testnet.arcis";
 
 pub const IS_DEVNET: bool = false;
+pub const LN_2_SCALED: u64 = 693_147_180_559_9453; // ln(2) * 10^16

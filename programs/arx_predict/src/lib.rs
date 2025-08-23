@@ -373,4 +373,12 @@ pub mod arx_predict {
         ctx.accounts.claim_rewards(computation_offset)
     }
 
+    pub fn fund_market(
+        ctx: Context<FundMarket>,
+        _id: u32,
+        amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.fund_market(amount)
+    }
+
 }

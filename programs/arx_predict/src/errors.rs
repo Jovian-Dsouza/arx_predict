@@ -32,4 +32,6 @@ pub enum ErrorCode {
     InvalidAmount,
     #[msg("Amount too large: exceeds maximum u64 value")]
     AmountTooLarge,
+    #[msg("Market not funded")]
+    MarketNotFunded,
 }

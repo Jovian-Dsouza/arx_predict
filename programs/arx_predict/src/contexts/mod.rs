@@ -10,6 +10,7 @@ pub mod sell_shares;
 pub mod withdraw_payment;
 pub mod settle_market;
 pub mod claim_rewards;
+pub mod fund_market;
 
 pub use comp_def::*;
 pub use callbacks::*;
@@ -23,3 +24,4 @@ pub use sell_shares::*;
 pub use withdraw_payment::*;
 pub use settle_market::*;
 pub use claim_rewards::*;
+pub use fund_market::*;

@@ -25,12 +25,13 @@ import {
   createUserPosition,
   createMarket,
   sendPayment,
-  revealResult,
+  // revealResult,
   buyShares,
   sellShares,
   withdrawPayment,
   settleMarket,
   claimRewards,
+  fundMarket,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -288,7 +289,7 @@ describe("Voting", () => {
       provider as anchor.AnchorProvider,
       owner,
       mint,
-      1000 * 1e6
+      100000 * 1e6
     );
     logSuccess(`Token mint: ${mint.toString()}`);
     logSuccess(`Owner ATA: ${ata.toString()}`);
@@ -376,7 +377,13 @@ describe("Voting", () => {
       
       // Mark this event as expected before creating the market
       globalEventListener.markExpected("initMarketStatsEvent", POLL_ID);
-      
+
+      const fundingAmount = liquidityParameter * Math.log(options.length) * 1e6;
+      logStep(`Funding market ${POLL_ID}, amount: ${fundingAmount} `);
+      await fundMarket(program, owner, ata, mint, POLL_ID, fundingAmount);
+      logSuccess(`Market ${POLL_ID} funded successfully`);
+
+      logStep(`Creating market ${POLL_ID}`);
       await createMarket(
         provider as anchor.AnchorProvider,
         program,
