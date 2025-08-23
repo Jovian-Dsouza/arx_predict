@@ -181,9 +181,15 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>, winner: u8) -> u8 {
+    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>, winner: u8) -> (
+        u8, // winning outcome
+        [f64; 2], // probs
+        [u64; 2], // vote stats
+    ) {
         let market_stats = market_stats_ctxt.to_arcis();
-        winner.reveal()
+        let probs = [market_stats.probs.option0.reveal(), market_stats.probs.option1.reveal()];
+        let vote_stats = [market_stats.vote_stats.option0.reveal(), market_stats.vote_stats.option1.reveal()];
+        (winner.reveal(), probs, vote_stats)
     }
 
     #[instruction]

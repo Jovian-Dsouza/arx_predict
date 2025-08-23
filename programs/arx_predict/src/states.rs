@@ -23,6 +23,7 @@ pub struct MarketAccount {
     pub tvl: u64,
     pub mint: Pubkey,
     pub mint_decimals: u8,
+    pub votes_revealed: [u64; MAX_OPTIONS],
 }
 
 #[account]

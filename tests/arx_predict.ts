@@ -142,6 +142,11 @@ const formatEventData = (eventName: string, eventData: any) => {
     
     case 'initMarketStatsEvent':
       return `Market ID: ${eventData.marketId}`;
+
+    case 'marketSettledEvent':
+      return `Market ID: ${eventData.marketId}, Winning outcome: ${eventData.winning_outcome}
+      Probs: ${eventData.probs[0].toString()}, ${eventData.probs[1].toString()}
+      Shares: ${eventData.votes[0].toString()}, ${eventData.votes[1].toString()}`;
     
     default:
       return JSON.stringify(eventData, null, 2);
@@ -498,7 +503,7 @@ describe("Voting", () => {
     logStep(`Selling shares for ${POLL_IDS.length} market(s)`);
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
-      const sharesToSell = 5;
+      const sharesToSell = 1 * 1000000;
       logProgress(i + 1, POLL_IDS.length, `Selling shares for market ${POLL_ID}`);
       
       // Wait for SellSharesEvent during share selling

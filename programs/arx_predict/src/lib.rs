@@ -199,11 +199,15 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
         ctx.accounts.market_acc.status = MarketStatus::Settled;
-        ctx.accounts.market_acc.winning_outcome = o;
+        ctx.accounts.market_acc.winning_outcome = o.field_0;
+        ctx.accounts.market_acc.probs_revealed = o.field_1;
+        ctx.accounts.market_acc.votes_revealed = o.field_2;
 
         emit!(MarketSettledEvent { 
             market_id: ctx.accounts.market_acc.id,
-            winning_outcome: o,
+            winning_outcome: ctx.accounts.market_acc.winning_outcome,
+            probs: ctx.accounts.market_acc.probs_revealed,
+            votes: ctx.accounts.market_acc.votes_revealed,
         });
 
         Ok(())

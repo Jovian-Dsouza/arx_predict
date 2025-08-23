@@ -266,60 +266,9 @@ export async function settleMarket(
   );
 
   const settleMarketEvent = await eventPromise;
-  console.log(`Settle market event=> market_id: ${settleMarketEvent.market_id}, winning_outcome: ${settleMarketEvent.winning_outcome}`);
   return settleMarketEvent;
 }
 
-// export async function settleMarket(
-//   program: Program<ArxPredict>,
-//   owner: anchor.web3.Keypair,
-//   winner: number,
-//   marketId: number,
-// ) {
-//   const sig = await program.methods
-//     .settleMarket(marketId, winner)
-//     .accountsPartial({
-//       payer: owner.publicKey,
-//     })
-//     .rpc({ commitment: "confirmed" });
-// }
-
-// export async function revealResult(
-//     provider: anchor.AnchorProvider,
-//     program: Program<ArxPredict>,
-//     marketId: number,
-//     arciumClusterPubkey: PublicKey,
-//     revealResultEventPromise: any
-// ) {
-//       const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-//       const revealQueueSig = await program.methods
-//         .revealResult(revealComputationOffset, marketId)
-//         .accountsPartial({
-//           computationAccount: getComputationAccAddress(
-//             program.programId,
-//             revealComputationOffset
-//           ),
-//           clusterAccount: arciumClusterPubkey,
-//           mxeAccount: getMXEAccAddress(program.programId),
-//           mempoolAccount: getMempoolAccAddress(program.programId),
-//           executingPool: getExecutingPoolAccAddress(program.programId),
-//           compDefAccount: getCompDefAccAddress(
-//             program.programId,
-//             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
-//           ),
-//         })
-//         .rpc({ commitment: "confirmed" });
-
-//       const revealFinalizeSig = await awaitComputationFinalization(
-//         provider as anchor.AnchorProvider,
-//         revealComputationOffset,
-//         program.programId,
-//         "confirmed"
-//       );
-
-//       const revealEvent = await revealResultEventPromise;
-//       return revealEvent;
-// }
 
 export async function buyShares(
   provider: anchor.AnchorProvider,
