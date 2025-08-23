@@ -27,6 +27,7 @@ pub struct BuySharesEvent {
     pub status: u8,
     pub timestamp: i64,
     pub amount: u64,
+    pub tvl: u64,
 }
 
 
@@ -36,6 +37,7 @@ pub struct SellSharesEvent {
     pub status: u8,
     pub timestamp: i64,
     pub amount: u64,
+    pub tvl: u64,
 }
 
 #[event]

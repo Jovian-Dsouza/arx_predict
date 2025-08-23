@@ -121,6 +121,7 @@ pub mod arx_predict {
                 status: 0,
                 timestamp: current_timestamp,
                 amount: amount,
+                tvl: ctx.accounts.market_acc.tvl,
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
@@ -138,6 +139,7 @@ pub mod arx_predict {
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
+            tvl: ctx.accounts.market_acc.tvl,
         });
 
         Ok(())
@@ -165,6 +167,7 @@ pub mod arx_predict {
                 status: 0,
                 timestamp: current_timestamp,
                 amount: 0,
+                tvl: ctx.accounts.market_acc.tvl,
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
@@ -184,6 +187,7 @@ pub mod arx_predict {
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
+            tvl: ctx.accounts.market_acc.tvl,
         });
 
         Ok(())
