@@ -81,12 +81,6 @@ impl<'info> ClaimRewards<'info> {
 
         let args = vec![
             Argument::PlaintextU8(self.market_acc.winning_outcome),
-            Argument::PlaintextU128(self.market_acc.nonce),
-            Argument::Account(
-                self.market_acc.key(),
-                MARKET_ACCOUNT_VOTE_STATS_OFFSET,
-                MARKET_ACCOUNT_VOTE_STATS_LENGTH + MARKET_ACCOUNT_PROB_LENGTH + MARKET_ACCOUNT_COST_LENGTH,
-            ),
             Argument::PlaintextU128(self.user_position_acc.nonce),
             Argument::Account(
                 self.user_position_acc.key(),

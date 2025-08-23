@@ -195,13 +195,11 @@ mod circuits {
     #[instruction]
     pub fn claim_rewards(
         winning_outcome: u8,
-        market_stats_ctxt: Enc<Mxe, MarketStats>,
         user_position_ctxt: Enc<Mxe, UserPosition>,
     ) -> (
         Enc<Mxe, UserPosition>, 
         u64, // Amount to claim
     ) {
-        let market_stats = market_stats_ctxt.to_arcis();
         let mut user_position = user_position_ctxt.to_arcis();
 
         let mut reward: u64 = 0;
