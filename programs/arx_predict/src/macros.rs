@@ -31,3 +31,15 @@ macro_rules! check_admin {
         }
     };
 }
+
+#[macro_export]
+macro_rules! define_circuit_urls {
+    ($base_url:expr; $($name:ident: $file:expr),* $(,)?) => {
+        $(
+            pub const $name: &str = concat!(
+                $base_url,
+                $file
+            );
+        )*
+    };
+}

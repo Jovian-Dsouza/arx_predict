@@ -1,5 +1,6 @@
 use anchor_lang::prelude::Pubkey;
 use arcium_anchor::comp_def_offset;
+use crate::define_circuit_urls;
 
 pub const COMP_DEF_OFFSET_INIT_MARKET_STATS: u32 = comp_def_offset("init_market_stats");
 pub const COMP_DEF_OFFSET_INIT_USER_POSITION: u32 = comp_def_offset("init_user_position");
@@ -23,15 +24,19 @@ pub const USER_POSITION_SHARES_LENGTH: u32 = 32 * MAX_OPTIONS as u32;
 
 pub const MARKET_REVEAL_PROBS_TIME: u64 = 60;
 
-pub const INIT_MARKET_STATS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/init_market_stats_testnet.arcis";
-pub const INIT_USER_POSITION_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/init_user_position_testnet.arcis";
-pub const BUY_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/buy_shares_testnet.arcis";
-pub const CLAIM_REWARDS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/claim_rewards_testnet.arcis";
-pub const REVEAL_PROBS_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_probs_testnet.arcis";
-pub const REVEAL_MARKET_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/reveal_market_testnet.arcis";
-pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeidfwlmh2rlvitzdontolwpyyqwiuqrmmivn4j3pgjvqrutde4dtxa/sell_shares_testnet.arcis";
 
-pub const IS_DEVNET: bool = false;
+define_circuit_urls! {
+    "https://sapphire-literary-rat-567.mypinata.cloud/ipfs/bafybeie3qscsek3ndbearfscoizime6cwee6w5rzgizaq7zzbgppvz6nga/";
+    INIT_MARKET_STATS_CIRCUIT: "init_market_stats_testnet.arcis",
+    INIT_USER_POSITION_CIRCUIT: "init_user_position_testnet.arcis",
+    BUY_SHARES_CIRCUIT: "buy_shares_testnet.arcis",
+    CLAIM_REWARDS_CIRCUIT: "claim_rewards_testnet.arcis", 
+    REVEAL_PROBS_CIRCUIT: "reveal_probs_testnet.arcis",
+    REVEAL_MARKET_CIRCUIT: "reveal_market_testnet.arcis",
+    SELL_SHARES_CIRCUIT: "sell_shares_testnet.arcis"
+}
+
+pub const IS_DEVNET: bool = true;
 pub const LN_2_SCALED: u64 = 693_147_180_559_9453; // ln(2) * 10^16
 pub const USDC_MINT: Pubkey = Pubkey::from_str_const("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"); // USDC devnet mint
 pub const ADMIN_KEY: Pubkey = Pubkey::from_str_const("9CtkxgXqNF3yvGr4u9jdVByyZknBH4SoqPgNpRbX2sjP"); // admin key
