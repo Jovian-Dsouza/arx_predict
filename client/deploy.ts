@@ -150,31 +150,25 @@ async function getVoteStats(
     marketId: number
 ) {
     let voteStats = [0, 0];
-    try {
-        const data = await getProbsHelper(
-            setupData.provider as anchor.AnchorProvider,
-            setupData.program,
-            marketId,
-            setupData.clusterAccount,
-            setupData.awaitEvent("revealProbsEvent")
-        );
-        voteStats = [data.votes[0].toNumber(), data.votes[1].toNumber()];
-        return voteStats;
-    } catch (error) {
-        if (error.error.errorCode.code === "MarketProbsRevealRateLimit") {
-            console.log("Market reveal rate limit");
-        }
-        else {
-            console.error("Error getting probs: ", error);
-        }
-    }
-
-    // Fallback to store market data
-    const marketData = await getMarketData(
+    const probsDataPromise =  getProbsHelper(
+        setupData.provider as anchor.AnchorProvider,
+        setupData.program,
+        marketId,
+        setupData.clusterAccount,
+        setupData.awaitEvent("revealProbsEvent")
+    );
+    const marketDataPromise = getMarketData(
         setupData.program,
         marketId
     );
-    voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];    
+    const [probsData, marketData] = await Promise.all([probsDataPromise, marketDataPromise]);
+
+    if (probsData) {
+        voteStats = [probsData.votes[0].toNumber(), probsData.votes[1].toNumber()];
+    } else{
+        voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];
+    }
+
     return voteStats;
 }
 

@@ -102,34 +102,44 @@ export async function getProbs(
   arciumClusterPubkey: PublicKey,
   revealProbsEventPromise: any
 ) {
-  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-  const revealQueueSig = await program.methods
-    .revealProbs(revealComputationOffset, marketId)
-    .accountsPartial({
-      computationAccount: getComputationAccAddress(
-        program.programId,
-        revealComputationOffset
-      ),
-      clusterAccount: arciumClusterPubkey,
-      mxeAccount: getMXEAccAddress(program.programId),
-      mempoolAccount: getMempoolAccAddress(program.programId),
-      executingPool: getExecutingPoolAccAddress(program.programId),
-      compDefAccount: getCompDefAccAddress(
-        program.programId,
-        Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
-      ),
-    })
-    .rpc({ commitment: "confirmed" });
+  try {
+    const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+    const revealQueueSig = await program.methods
+      .revealProbs(revealComputationOffset, marketId)
+      .accountsPartial({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          revealComputationOffset
+        ),
+        clusterAccount: arciumClusterPubkey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
+        ),
+      })
+      .rpc({ commitment: "confirmed" });
 
-  const revealFinalizeSig = await awaitComputationFinalization(
-    provider as anchor.AnchorProvider,
-    revealComputationOffset,
-    program.programId,
-    "confirmed"
-  );
+    const revealFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      revealComputationOffset,
+      program.programId,
+      "confirmed"
+    );
 
-  const revealProbsEvent = await revealProbsEventPromise;
-  return revealProbsEvent;
+    const revealProbsEvent = await revealProbsEventPromise;
+    return revealProbsEvent;
+  } catch (error) {
+    if (error.error.errorCode.code === "MarketProbsRevealRateLimit") {
+      console.log("Market reveal rate limit");
+    }
+    else {
+        console.error("Error getting probs: ", error);
+    }
+  }
+  return null;
 }
 
 export async function createMarket(
