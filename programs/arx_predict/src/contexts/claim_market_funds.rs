@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::{states::{MarketAccount, MarketStatus}, ErrorCode};
+use crate::{check_mint, states::{MarketAccount, MarketStatus}, ErrorCode};
 
 #[derive(Accounts)]
 #[instruction(id: u32)]
@@ -61,6 +61,7 @@ impl<'info> ClaimMarketFunds<'info> {
             self.payer.key() == self.market_acc.authority,
             ErrorCode::InvalidAuthority
         );
+        check_mint!(self.mint.key());
 
         let winning_amount  = 10000; //TODO
 

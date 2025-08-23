@@ -1,3 +1,4 @@
+use anchor_lang::prelude::Pubkey;
 use arcium_anchor::comp_def_offset;
 
 pub const COMP_DEF_OFFSET_INIT_MARKET_STATS: u32 = comp_def_offset("init_market_stats");
@@ -32,3 +33,4 @@ pub const SELL_SHARES_CIRCUIT: &str = "https://sapphire-literary-rat-567.mypinat
 
 pub const IS_DEVNET: bool = false;
 pub const LN_2_SCALED: u64 = 693_147_180_559_9453; // ln(2) * 10^16
+pub const USDC_MINT: Pubkey = Pubkey::from_str_const("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"); // USDC devnet mint

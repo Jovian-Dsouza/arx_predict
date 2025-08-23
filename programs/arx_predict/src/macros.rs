@@ -13,3 +13,12 @@ macro_rules! conditional_circuit_source {
         }
     };
 }
+
+#[macro_export]
+macro_rules! check_mint {
+    ($mint:expr) => {
+        if $crate::constants::IS_DEVNET {
+            require!($mint == $crate::constants::USDC_MINT, $crate::errors::ErrorCode::InvalidMint);
+        }
+    };
+}

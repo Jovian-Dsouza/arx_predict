@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::states::UserPosition;
+use crate::{check_mint, states::UserPosition};
 use crate::ErrorCode;
 
 #[derive(Accounts)]
@@ -53,6 +53,7 @@ impl<'info> WithdrawPayment<'info> {
         id: u32, 
         bump: u8
     ) -> Result<()> {
+        check_mint!(self.mint.key());
         require!(self.user_position_acc.balance >= amount, ErrorCode::InsufficientBalance);
         self.user_position_acc.balance -= amount;
         let transfer_accounts = TransferChecked {

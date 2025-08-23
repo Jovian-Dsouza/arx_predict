@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::states::UserPosition;
+use crate::{check_mint, states::UserPosition};
 
 #[derive(Accounts)]
 #[instruction(_id: u32)]
@@ -50,7 +50,7 @@ impl<'info> SendPayment<'info> {
         &mut self,
         amount: u64
     ) -> Result<()> {
-
+        check_mint!(self.mint.key());
         let transfer_accounts = TransferChecked {
             from: self.ata.to_account_info(),
             mint: self.mint.to_account_info(),

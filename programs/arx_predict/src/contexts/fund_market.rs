@@ -4,6 +4,8 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
+use crate::check_mint;
+
 #[derive(Accounts)]
 #[instruction(_id: u32)]
 pub struct FundMarket<'info> {
@@ -42,7 +44,7 @@ impl<'info> FundMarket<'info> {
         &mut self,
         amount: u64
     ) -> Result<()> {
-
+        check_mint!(self.mint.key());
         let transfer_accounts = TransferChecked {
             from: self.ata.to_account_info(),
             mint: self.mint.to_account_info(),

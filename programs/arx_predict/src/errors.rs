@@ -34,4 +34,6 @@ pub enum ErrorCode {
     AmountTooLarge,
     #[msg("Market not funded")]
     MarketNotFunded,
+    #[msg("Invalid mint")]
+    InvalidMint,
 }
