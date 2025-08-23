@@ -36,4 +36,6 @@ pub enum ErrorCode {
     MarketNotFunded,
     #[msg("Invalid mint")]
     InvalidMint,
+    #[msg("Invalid outcome")]
+    InvalidOutcome,
 }

@@ -56,3 +56,9 @@ pub struct MarketSettledEvent {
     pub probs: [f64; 2],
     pub votes: [u64; 2],
 }
+
+#[event]
+pub struct ClaimMarketFundsEvent {
+    pub market_id: u32,
+    pub amount: u64,
+}

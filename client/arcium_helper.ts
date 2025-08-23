@@ -422,3 +422,27 @@ export async function claimRewards(
 
   const claimRewardsEvent = await claimRewardsEventPromise;
 }
+
+
+export async function claimMarketFunds(
+  program: Program<ArxPredict>,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+  mint: anchor.web3.PublicKey,
+  marketId: number,
+  claimMarketFundsEventPromise: any
+) {
+  const sig = await program.methods
+    .claimMarketFunds(marketId)
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .rpc({ commitment: "confirmed" });
+
+  const claimMarketFundsEvent = await claimMarketFundsEventPromise;
+  const claimMarketFundsAmountUsdc = claimMarketFundsEvent.amount / 1e6;
+  console.log(`Claim market funds event=> amount: ${claimMarketFundsAmountUsdc}`);
+  return sig;
+}

@@ -32,6 +32,7 @@ import {
   settleMarket,
   claimRewards,
   fundMarket,
+  claimMarketFunds,
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
@@ -614,6 +615,16 @@ describe("Voting", () => {
       logSuccess(`Payment withdrawn from market ${POLL_ID}`);
       logInfo(`   Amount: ${formatUSDC(withdrawalAmount)}`);
     }
+
+    logSection("Claim Market Funds");
+    logStep(`Claiming market funds for ${POLL_IDS.length} market(s)`);
+    globalEventListener.markExpected("claimMarketFundsEvent", POLL_IDS[0]); // Mark as expected
+    const claimMarketFundsEventPromise = waitForEvent("claimMarketFundsEvent");
+
+    await claimMarketFunds(program, owner, ata, mint, POLL_IDS[0], claimMarketFundsEventPromise);
+    const claimMarketFundsEvent = await claimMarketFundsEventPromise;
+    logInfo(`   Amount: ${formatUSDC(claimMarketFundsEvent.amount.toNumber())}`);
+    logSuccess(`Market funds claimed for market ${POLL_IDS[0]}`);
 
     logSection("Test Completion");
     logSuccess("All voting operations completed successfully! 🎉");

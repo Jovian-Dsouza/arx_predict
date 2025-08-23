@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount, TransferChecked, transfer_checked}
 };
 
-use crate::{check_mint, states::{MarketAccount, MarketStatus}, ErrorCode};
+use crate::{check_mint, events::ClaimMarketFundsEvent, states::{MarketAccount, MarketStatus}, ErrorCode};
 
 #[derive(Accounts)]
 #[instruction(id: u32)]
@@ -63,7 +63,11 @@ impl<'info> ClaimMarketFunds<'info> {
         );
         check_mint!(self.mint.key());
 
-        let winning_amount  = 10000; //TODO
+        let winning_amount  = match self.market_acc.winning_outcome {
+            0 => self.market_acc.votes_revealed[0], //TODO: shares / mint decimals scale 
+            1 => self.market_acc.votes_revealed[1], //TODO: shares / mint decimals scale
+            _ => return Err(ErrorCode::InvalidOutcome.into()),
+        };
 
         let amount = self.market_acc.tvl - winning_amount;
         require!(amount > 0, ErrorCode::InsufficientBalance);
@@ -84,6 +88,13 @@ impl<'info> ClaimMarketFunds<'info> {
             ),
             amount,
             self.mint.decimals
-        )
+        )?;
+        self.market_acc.tvl = 0;
+
+        emit!(ClaimMarketFundsEvent {
+            market_id: id,
+            amount: amount,
+        });
+        Ok(())
     }
 } 
