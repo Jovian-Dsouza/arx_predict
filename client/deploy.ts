@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 
-import { createTokenMint, getRequiredATA, readKpJson } from "../client/utils";
+import { createTokenMint, getRequiredATA, readKpJson } from "./utils";
 import {
 //   getMXEPublicKeyWithRetry,
   getProbs as getProbsHelper,
@@ -16,7 +16,7 @@ import {
   getMXEPublicKeyWithRetry,
   fundAndCreateMarket,
   getUserPosition,
-} from "../client/arcium_helper";
+} from "./arcium_helper";
 
 import { initCompDefs, setup, uploadCompDefsCircuits } from "./setup";
 import { SetupData } from "./setup";
