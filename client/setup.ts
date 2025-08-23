@@ -28,7 +28,6 @@ import {
   createUserPosition,
   createMarket as createMarketHelper,
   sendPayment,
-  revealResult,
   buyShares,
   sellShares,
   withdrawPayment,
@@ -38,7 +37,7 @@ import {
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
-  initRevealResultCompDef,
+  initRevealMarketCompDef,
   initRevealProbsCompDef,
   initMarketStatsCompDef,
   initBuySharesCompDef,
@@ -125,7 +124,37 @@ export async function setup(): Promise<SetupData> {
   };
 }
 
+async function initCompDefHelper(setupData: SetupData, initFn: any) {
+  try {
+    const sig = await initFn(setupData.provider as anchor.AnchorProvider, setupData.program, setupData.wallet, false);
+    console.log(`${initFn.name} computation definition initialized: `, sig);
+    return sig;
+  } catch (e) {
+    console.error(`Error initializing ${initFn.name}: `, e);
+  }
+}
+
 export async function initCompDefs(setupData: SetupData) {
+  const { provider, program, wallet } = setupData;
+
+  console.log("Initializing comp defs...");
+  const initFnList = [
+    initMarketStatsCompDef,
+    initUserPositionCompDef,
+    initRevealMarketCompDef,
+    initRevealProbsCompDef,
+    initBuySharesCompDef,
+    initSellSharesCompDef,
+    initClaimRewardsCompDef,
+  ];
+  const sigs = await Promise.all(initFnList.map(initFn => initCompDefHelper(setupData, initFn)));
+  console.log("Comp defs initialized: ", sigs);
+  return sigs;
+}
+
+
+
+export async function initCompDefs2(setupData: SetupData) {
   const { provider, program, wallet } = setupData;
 
   console.log("Initializing comp defs...");
@@ -152,15 +181,15 @@ export async function initCompDefs(setupData: SetupData) {
     initUserPositionSig
   );
 
-  const initRevealResultSig = await initRevealResultCompDef(
+  const initRevealMarketSig = await initRevealMarketCompDef(
     provider as anchor.AnchorProvider,
     program,
     wallet,
     false
   );
   console.log(
-    "Reveal result computation definition initialized: ",
-    initRevealResultSig
+    "Reveal market computation definition initialized: ",
+    initRevealMarketSig
   );
 
   const initRevealProbsSig = await initRevealProbsCompDef(

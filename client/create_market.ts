@@ -141,14 +141,9 @@ async function revealProbs() {
     console.log("Probs: ", probs);
 }
 
-async function initDefs() {
-    const setupData = await setup();
-    await initCompDefs(setupData);
-    console.log("Defs initialized");
-}
-
 async function main() {
-    // await initDefs();    
+    const setupData = await setup();
+    await initCompDefs(setupData);    
     //await createMarket();
     // await createUserPosition();
     //await sendPayment();
