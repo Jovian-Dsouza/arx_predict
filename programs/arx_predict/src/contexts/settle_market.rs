@@ -82,6 +82,7 @@ impl<'info> SettleMarket<'info> {
                     + MARKET_ACCOUNT_PROB_LENGTH
                     + MARKET_ACCOUNT_COST_LENGTH,
             ),
+            Argument::PlaintextU8(winner),
         ];
 
         queue_computation(
@@ -94,9 +95,6 @@ impl<'info> SettleMarket<'info> {
             }],
             None,
         )?;
-
-        self.market_acc.winning_outcome = winner;
-
         Ok(())
     }
 } 

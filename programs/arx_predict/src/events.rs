@@ -52,4 +52,5 @@ pub struct InitMarketStatsEvent {
 #[event]
 pub struct MarketSettledEvent {
     pub market_id: u32,
+    pub winning_outcome: u8,
 }

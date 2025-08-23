@@ -181,9 +181,9 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>) -> VoteStats {
+    pub fn reveal_market(market_stats_ctxt: Enc<Mxe, MarketStats>, winner: u8) -> u8 {
         let market_stats = market_stats_ctxt.to_arcis();
-        market_stats.vote_stats.reveal()
+        winner.reveal()
     }
 
     #[instruction]

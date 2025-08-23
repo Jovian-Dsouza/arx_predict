@@ -199,9 +199,11 @@ pub mod arx_predict {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
         ctx.accounts.market_acc.status = MarketStatus::Settled;
+        ctx.accounts.market_acc.winning_outcome = o;
 
         emit!(MarketSettledEvent { 
             market_id: ctx.accounts.market_acc.id,
+            winning_outcome: o,
         });
 
         Ok(())

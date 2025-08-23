@@ -266,6 +266,7 @@ export async function settleMarket(
   );
 
   const settleMarketEvent = await eventPromise;
+  console.log(`Settle market event=> market_id: ${settleMarketEvent.market_id}, winning_outcome: ${settleMarketEvent.winning_outcome}`);
   return settleMarketEvent;
 }
 
