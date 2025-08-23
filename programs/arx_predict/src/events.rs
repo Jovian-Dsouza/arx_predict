@@ -17,8 +17,8 @@ pub struct RevealResultEvent {
 #[event]
 pub struct RevealProbsEvent {
     pub market_id: u32,
-    pub share0: f64,
-    pub share1: f64,
+    pub probs: [f64; 2],
+    pub votes: [u64; 2],
 }
 
 #[event]

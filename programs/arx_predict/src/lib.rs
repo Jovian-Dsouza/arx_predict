@@ -225,14 +225,14 @@ pub mod arx_predict {
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp as u64;
-        ctx.accounts.market_acc.probs_revealed = o;
+        ctx.accounts.market_acc.probs_revealed = o.field_0;
+        ctx.accounts.market_acc.votes_revealed = o.field_1;
         ctx.accounts.market_acc.updated_at = current_timestamp;
-
 
         emit!(RevealProbsEvent { 
             market_id: ctx.accounts.market_acc.id,
-            share0: o[0] as f64,
-            share1: o[1] as f64,
+            probs: o.field_0,
+            votes: o.field_1,
         });
 
         Ok(())

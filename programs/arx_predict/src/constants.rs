@@ -36,7 +36,7 @@ define_circuit_urls! {
     SELL_SHARES_CIRCUIT: "sell_shares_testnet.arcis"
 }
 
-pub const IS_DEVNET: bool = true;
+pub const IS_DEVNET: bool = false;
 pub const LN_2_SCALED: u64 = 693_147_180_559_9453; // ln(2) * 10^16
 pub const USDC_MINT: Pubkey = Pubkey::from_str_const("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"); // USDC devnet mint
 pub const ADMIN_KEY: Pubkey = Pubkey::from_str_const("9CtkxgXqNF3yvGr4u9jdVByyZknBH4SoqPgNpRbX2sjP"); // admin key
