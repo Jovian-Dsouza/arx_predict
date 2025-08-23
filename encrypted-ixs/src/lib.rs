@@ -173,10 +173,14 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_probs(probs_ctxt: Enc<Mxe, MarketStats>) -> [f64; 2] {
-        let probs = probs_ctxt.to_arcis();
-        let probabilities = [probs.probs.option0.reveal(), probs.probs.option1.reveal()];
-        probabilities
+    pub fn reveal_probs(market_stats_ctxt: Enc<Mxe, MarketStats>) -> (
+        [f64; 2], // probs
+        [u64; 2], // vote stats
+    ) {
+        let market_stats = market_stats_ctxt.to_arcis();
+        let probabilities = [market_stats.probs.option0.reveal(), market_stats.probs.option1.reveal()];
+        let vote_stats = [market_stats.vote_stats.option0.reveal(), market_stats.vote_stats.option1.reveal()];
+        (probabilities, vote_stats)
     }
 
     #[instruction]

@@ -17,8 +17,8 @@ pub struct RevealResultEvent {
 #[event]
 pub struct RevealProbsEvent {
     pub market_id: u32,
-    pub share0: f64,
-    pub share1: f64,
+    pub probs: [f64; 2],
+    pub votes: [u64; 2],
 }
 
 #[event]
@@ -27,6 +27,7 @@ pub struct BuySharesEvent {
     pub status: u8,
     pub timestamp: i64,
     pub amount: u64,
+    pub tvl: u64,
 }
 
 
@@ -36,6 +37,7 @@ pub struct SellSharesEvent {
     pub status: u8,
     pub timestamp: i64,
     pub amount: u64,
+    pub tvl: u64,
 }
 
 #[event]

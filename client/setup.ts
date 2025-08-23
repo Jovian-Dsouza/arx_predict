@@ -28,7 +28,6 @@ import {
   createUserPosition,
   createMarket as createMarketHelper,
   sendPayment,
-  revealResult,
   buyShares,
   sellShares,
   withdrawPayment,
@@ -38,7 +37,7 @@ import {
 } from "../client/arcium_helper";
 import {
   initUserPositionCompDef,
-  initRevealResultCompDef,
+  initRevealMarketCompDef,
   initRevealProbsCompDef,
   initMarketStatsCompDef,
   initBuySharesCompDef,
@@ -50,7 +49,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 // @ts-ignore
 import * as IDL from "../target/idl/arx_predict.json";
 
-type SetupData = {
+export type SetupData = {
   connection: Connection;
   wallet: Keypair;
   provider: anchor.AnchorProvider;
@@ -63,6 +62,7 @@ type SetupData = {
   cipherPrivateKey: Uint8Array;
   cipherSharedSecret: Uint8Array;
   awaitEvent: any;
+  ata: PublicKey;
 };
 
 export async function setup(): Promise<SetupData> {
@@ -105,10 +105,13 @@ export async function setup(): Promise<SetupData> {
     return event;
   };
 
+  const ata = await getRequiredATA(provider, wallet, mint, wallet, wallet, 0);
+
   console.log("wallet: ", wallet.publicKey.toBase58());
   console.log("program: ", program.programId.toBase58());
   console.log("clusterAccount: ", clusterAccount.toBase58());
   console.log("mint: ", mint.toBase58());
+  console.log("ata: ", ata.toBase58());
   return {
     connection,
     wallet,
@@ -122,10 +125,41 @@ export async function setup(): Promise<SetupData> {
     cipherPrivateKey,
     cipherSharedSecret,
     awaitEvent,
+    ata,
   };
 }
 
+async function initCompDefHelper(setupData: SetupData, initFn: any) {
+  try {
+    const sig = await initFn(setupData.provider as anchor.AnchorProvider, setupData.program, setupData.wallet, false);
+    console.log(`${initFn.name} computation definition initialized: `, sig);
+    return sig;
+  } catch (e) {
+    console.error(`Error initializing ${initFn.name}: `, e);
+  }
+}
+
 export async function initCompDefs(setupData: SetupData) {
+  const { provider, program, wallet } = setupData;
+
+  console.log("Initializing comp defs...");
+  const initFnList = [
+    initMarketStatsCompDef,
+    initUserPositionCompDef,
+    initRevealMarketCompDef,
+    initRevealProbsCompDef,
+    initBuySharesCompDef,
+    initSellSharesCompDef,
+    initClaimRewardsCompDef,
+  ];
+  const sigs = await Promise.all(initFnList.map(initFn => initCompDefHelper(setupData, initFn)));
+  console.log("Comp defs initialized: ", sigs);
+  return sigs;
+}
+
+
+
+export async function initCompDefs2(setupData: SetupData) {
   const { provider, program, wallet } = setupData;
 
   console.log("Initializing comp defs...");
@@ -152,15 +186,15 @@ export async function initCompDefs(setupData: SetupData) {
     initUserPositionSig
   );
 
-  const initRevealResultSig = await initRevealResultCompDef(
+  const initRevealMarketSig = await initRevealMarketCompDef(
     provider as anchor.AnchorProvider,
     program,
     wallet,
     false
   );
   console.log(
-    "Reveal result computation definition initialized: ",
-    initRevealResultSig
+    "Reveal market computation definition initialized: ",
+    initRevealMarketSig
   );
 
   const initRevealProbsSig = await initRevealProbsCompDef(

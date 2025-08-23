@@ -15,7 +15,7 @@ use contexts::*;
 use events::*;
 use utils::*;
 
-declare_id!("7ox4o9VrNnducKJgmBFYu2yrLoYgw7dkZKH4Qjz5qUQg");
+declare_id!("GYP8ZjJ7eis3S8kTaGnotSiCDBJ2zphNUb1TkqD3Qknf");
 
 #[arcium_program]
 pub mod arx_predict {
@@ -121,6 +121,7 @@ pub mod arx_predict {
                 status: 0,
                 timestamp: current_timestamp,
                 amount: amount,
+                tvl: ctx.accounts.market_acc.tvl,
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
@@ -138,6 +139,7 @@ pub mod arx_predict {
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
+            tvl: ctx.accounts.market_acc.tvl,
         });
 
         Ok(())
@@ -165,6 +167,7 @@ pub mod arx_predict {
                 status: 0,
                 timestamp: current_timestamp,
                 amount: 0,
+                tvl: ctx.accounts.market_acc.tvl,
             });
             return Ok(()); //TODO, cant return error here because of the callback
         }
@@ -184,6 +187,7 @@ pub mod arx_predict {
             status: 1,
             timestamp: current_timestamp,
             amount: amount,
+            tvl: ctx.accounts.market_acc.tvl,
         });
 
         Ok(())
@@ -225,14 +229,14 @@ pub mod arx_predict {
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp as u64;
-        ctx.accounts.market_acc.probs_revealed = o;
+        ctx.accounts.market_acc.probs_revealed = o.field_0;
+        ctx.accounts.market_acc.votes_revealed = o.field_1;
         ctx.accounts.market_acc.updated_at = current_timestamp;
-
 
         emit!(RevealProbsEvent { 
             market_id: ctx.accounts.market_acc.id,
-            share0: o[0] as f64,
-            share1: o[1] as f64,
+            probs: o.field_0,
+            votes: o.field_1,
         });
 
         Ok(())

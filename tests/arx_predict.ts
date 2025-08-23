@@ -131,7 +131,7 @@ const formatEventData = (eventName: string, eventData: any) => {
       return `Market ID: ${eventData.marketId}, Output: ${eventData.output}`;
     
     case 'revealProbsEvent':
-      return `Market ID: ${eventData.marketId}, ${formatProbability(eventData.share0, eventData.share1)}`;
+      return `Market ID: ${eventData.marketId}, ${formatProbability(eventData.probs[0], eventData.probs[1])}, Votes: ${eventData.votes[0].toString()}, ${eventData.votes[1].toString()}`;
     
     case 'buySharesEvent':
       return `Market ID: ${eventData.marketId}, Status: ${eventData.status}, Timestamp: ${formatTimestamp(eventData.timestamp)}, Amount: ${formatUSDC(eventData.amount)}`;

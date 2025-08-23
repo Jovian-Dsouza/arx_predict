@@ -3,7 +3,7 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "create-market": "ts-node client/create_market.ts"
+    "deploy": "ts-node client/deploy.ts"
   },
   "dependencies": {
     "@arcium-hq/client": "0.2.0",

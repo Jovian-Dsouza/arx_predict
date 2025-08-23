@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { ArxPredict } from "../target/types/arx_predict";
 import { randomBytes } from "crypto";
 import {
@@ -92,6 +92,7 @@ export async function createUserPosition(
     program.programId,
     "confirmed"
   );
+  return finalizePollSig;
 }
 
 export async function getProbs(
@@ -101,34 +102,44 @@ export async function getProbs(
   arciumClusterPubkey: PublicKey,
   revealProbsEventPromise: any
 ) {
-  const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
-  const revealQueueSig = await program.methods
-    .revealProbs(revealComputationOffset, marketId)
-    .accountsPartial({
-      computationAccount: getComputationAccAddress(
-        program.programId,
-        revealComputationOffset
-      ),
-      clusterAccount: arciumClusterPubkey,
-      mxeAccount: getMXEAccAddress(program.programId),
-      mempoolAccount: getMempoolAccAddress(program.programId),
-      executingPool: getExecutingPoolAccAddress(program.programId),
-      compDefAccount: getCompDefAccAddress(
-        program.programId,
-        Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
-      ),
-    })
-    .rpc({ commitment: "confirmed" });
+  try {
+    const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+    const revealQueueSig = await program.methods
+      .revealProbs(revealComputationOffset, marketId)
+      .accountsPartial({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          revealComputationOffset
+        ),
+        clusterAccount: arciumClusterPubkey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("reveal_probs")).readUInt32LE()
+        ),
+      })
+      .rpc({ commitment: "confirmed" });
 
-  const revealFinalizeSig = await awaitComputationFinalization(
-    provider as anchor.AnchorProvider,
-    revealComputationOffset,
-    program.programId,
-    "confirmed"
-  );
+    const revealFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      revealComputationOffset,
+      program.programId,
+      "confirmed"
+    );
 
-  const revealProbsEvent = await revealProbsEventPromise;
-  return revealProbsEvent;
+    const revealProbsEvent = await revealProbsEventPromise;
+    return revealProbsEvent;
+  } catch (error) {
+    if (error.error.errorCode.code === "MarketProbsRevealRateLimit") {
+      console.log("Market reveal rate limit");
+    }
+    else {
+        console.error("Error getting probs: ", error);
+    }
+  }
+  return null;
 }
 
 export async function createMarket(
@@ -176,6 +187,83 @@ export async function createMarket(
     "confirmed"
   );
   return finalizePollSig;
+}
+
+export async function fundAndCreateMarket(
+  provider: anchor.AnchorProvider,
+  program: Program<ArxPredict>,
+  arciumClusterPubkey: PublicKey,
+  marketId: number,
+  question: string,
+  options: string[],
+  liquidityParameter: number,
+  mint: PublicKey,
+  owner: anchor.web3.Keypair,
+  ata: anchor.web3.PublicKey,
+) {
+
+  const fundingAmount = liquidityParameter * Math.log(options.length) * 1e6;
+  console.log(`Funding market ${marketId}, amount: ${fundingAmount/1e6} USDC`);
+
+  // First fund the market
+  const fundMarketSig = await program.methods
+    .fundMarket(marketId, new anchor.BN(fundingAmount))
+    .accountsPartial({
+      payer: owner.publicKey,
+      ata: ata,
+      mint: mint,
+    })
+    .signers([owner])
+    .rpc({ commitment: "confirmed" });
+
+  console.log(`Market ${marketId} funded with signature: ${fundMarketSig}`);
+
+  // Then create the market
+  const nonce = randomBytes(16);
+  const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
+  const createMarketSig = await program.methods
+    .createMarket(
+      pollComputationOffset,
+      marketId,
+      question,
+      options,
+      new anchor.BN(liquidityParameter),
+      new anchor.BN(deserializeLE(nonce).toString())
+    )
+    .accountsPartial({
+      computationAccount: getComputationAccAddress(
+        program.programId,
+        pollComputationOffset
+      ),
+      clusterAccount: arciumClusterPubkey,
+      mxeAccount: getMXEAccAddress(program.programId),
+      mempoolAccount: getMempoolAccAddress(program.programId),
+      executingPool: getExecutingPoolAccAddress(program.programId),
+      compDefAccount: getCompDefAccAddress(
+        program.programId,
+        Buffer.from(getCompDefAccOffset("init_market_stats")).readUInt32LE()
+      ),
+      mint: mint,
+      payer: owner.publicKey,
+    })
+    .signers([owner])
+    .rpc({ commitment: "confirmed" });
+
+  console.log(`Market ${marketId} created with signature: ${createMarketSig}`);
+  
+  const finalizePollSig = await awaitComputationFinalization(
+    provider as anchor.AnchorProvider,
+    pollComputationOffset,
+    program.programId,
+    "confirmed"
+  );
+  
+  console.log(`Market ${marketId} computation finalized with signature: ${finalizePollSig}`);
+  return { 
+    fundMarketSig, 
+    createMarketSig, 
+    finalizeSig: finalizePollSig 
+  };
 }
 
 export async function sendPayment(
@@ -330,8 +418,8 @@ export async function buyShares(
 
   const buySharesEvent = await buySharesEventPromise;
   const buySharesAmountUsdc = buySharesEvent.amount / 1e6;
-  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}`);
-  return finalizeSig;
+  console.log(`Buy shares event=> status: ${buySharesEvent.status}, amount: ${buySharesAmountUsdc}, tvl: ${buySharesEvent.tvl / 1e6} USDC`);
+  return buySharesEvent;
 }
 
 export async function sellShares(
@@ -386,7 +474,7 @@ export async function sellShares(
 
   const sellSharesEvent = await sellSharesEventPromise;
   const sellSharesAmountUsdc = sellSharesEvent.amount / 1e6;
-  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}`);
+  console.log(`Sell shares event=> status: ${sellSharesEvent.status}, amount: ${sellSharesAmountUsdc}, tvl: ${sellSharesEvent.tvl / 1e6} USDC`);
   return finalizeSig;
 }
 
@@ -463,13 +551,34 @@ export async function getUserPosition(
   owner: anchor.web3.Keypair,
   marketId: number
 ) {
-  const userPositionSeed = [
-    Buffer.from("user_position"),
-    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
-    owner.publicKey.toBuffer(),
-  ];
-  const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
-  const userPosition = await program.account.userPosition.fetch(userPositionPDA);
-  console.log(`User position=> ${userPositionPDA.toBase58()} balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
-  return userPosition;
+  try {
+    const userPositionSeed = [
+      Buffer.from("user_position"),
+      new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+      owner.publicKey.toBuffer(),
+    ];
+    const userPositionPDA = PublicKey.findProgramAddressSync(userPositionSeed, program.programId)[0];
+    const userPosition = await program.account.userPosition.fetch(userPositionPDA);
+    console.log(`User position=> ${userPositionPDA.toBase58()} marketId: ${userPosition.marketId}, balance: ${userPosition.balance.toNumber() / 1e6} USDC`);
+    return userPosition;
+  } catch (e) {
+    console.error("Error getting user position: ", e);
+    return null;
+  }
 }
+
+
+export async function getMarketData(
+  program: Program<ArxPredict>,
+  marketId: number
+) {
+  const marketDataSeed = [
+    Buffer.from("market"),
+    new anchor.BN(marketId).toArrayLike(Buffer, "le", 4),
+  ];
+  const marketDataPDA = PublicKey.findProgramAddressSync(marketDataSeed, program.programId)[0];
+  const marketData = await program.account.marketAccount.fetch(marketDataPDA);
+  // console.log(`Market data=> ${JSON.stringify(marketData)}`);
+  return marketData;
+}
+
