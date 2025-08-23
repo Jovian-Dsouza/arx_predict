@@ -118,7 +118,7 @@ impl<'info> CreateMarket<'info> {
         self.market_acc.cost = [0; 32];
         self.market_acc.liquidity_parameter = liquidity_parameter;
         self.market_acc.status = MarketStatus::Active;
-        self.market_acc.tvl = 0;
+        self.market_acc.tvl = self.vault.amount;
         self.market_acc.probs_revealed = [0.0; MAX_OPTIONS];
         self.market_acc.mint = self.mint.key();
         self.market_acc.mint_decimals = self.mint.decimals;
