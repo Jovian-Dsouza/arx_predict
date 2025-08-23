@@ -151,14 +151,17 @@ async function getMarketStats(
     marketId: number
 ) {
     let voteStats = [0, 0];
-    // const probsDataPromise =  getProbsHelper(
-    //     setupData.provider as anchor.AnchorProvider,
-    //     setupData.program,
-    //     marketId,
-    //     setupData.clusterAccount,
-    //     setupData.awaitEvent("revealProbsEvent")
-    // );
-    const probsData = null;
+    console.log("==> Fetching market data");
+    const probsDataPromise =  getProbsHelper(
+        setupData.provider as anchor.AnchorProvider,
+        setupData.program,
+        marketId,
+        setupData.clusterAccount,
+        setupData.awaitEvent("revealProbsEvent")
+    );
+    //Sleep for 1 second
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const probsData = await probsDataPromise;
     const marketDataPromise = getMarketData(
         setupData.program,
         marketId
@@ -167,8 +170,11 @@ async function getMarketStats(
     // const [probsData, marketData] = await Promise.all([probsDataPromise, marketDataPromise]);
 
     if (probsData) {
+        console.log("==> Latest market data fetched");
         voteStats = [probsData.votes[0].toNumber(), probsData.votes[1].toNumber()];
     } else{
+        throw new Error("No probs data found");
+        console.log("==> Market data fetched");
         voteStats = [marketData.votesRevealed[0].toNumber(), marketData.votesRevealed[1].toNumber()];
     }
 
@@ -186,6 +192,8 @@ async function buySharesInAmount(
     amount: number
 ) {
     const marketStats = await getMarketStats(setupData, marketId);
+    console.log("Market stats: ", marketStats.voteStats[0]/1e6, marketStats.voteStats[1]/1e6, marketStats.liquidityParameter);
+    const userPositionInital = await getUserPosition(setupData.program, setupData.wallet, marketId);
     const shares = calculateSharesForAmount(
         marketStats.liquidityParameter,
         marketStats.voteStats,
@@ -193,13 +201,21 @@ async function buySharesInAmount(
         amount
     );
     console.log(`Buying for vote ${vote} in amount ${amount / 1e6} USDC will give approx ${shares / 1e6} shares`);
+
+    let amountToSend = amount;
+    if(userPositionInital) {
+        amountToSend = Math.max(0, amount - userPositionInital.balance.toNumber());
+        console.log(`User position already has ${userPositionInital.balance.toNumber() / 1e6} USDC sending ${amountToSend / 1e6} USDC`);
+    }
     
-    try {
-        const ata = await getRequiredATA(setupData.provider, setupData.wallet, setupData.mint, setupData.wallet, setupData.wallet, 0);
-        const sig = await sendPaymentHelper(setupData.program, setupData.wallet, ata, setupData.mint, marketId, amount);
-        console.log("Payment sent: ", sig);
-    } catch (error) {
-        console.log("Payment error: ", error);
+    if(amountToSend > 0) {
+        try {
+            const ata = await getRequiredATA(setupData.provider, setupData.wallet, setupData.mint, setupData.wallet, setupData.wallet, 0);
+            const sig = await sendPaymentHelper(setupData.program, setupData.wallet, ata, setupData.mint, marketId, amountToSend);
+            console.log("Payment sent: ", sig);
+        } catch (error) {
+            console.log("Payment error: ", error);
+        }
     }
 
     try {
@@ -215,10 +231,14 @@ async function buySharesInAmount(
             shares,
             setupData.awaitEvent("buySharesEvent")
         );
-        console.log("Shares bought: ", eventData);
+        const errorInAmount = Math.abs(eventData.amount - amount);
+        console.log(`Error in amount: ${errorInAmount / 1e6} USDC, in %: ${(errorInAmount / amount) * 100}`);
     } catch (error) {
         console.log("Error buying shares: ", error);
     }
+
+
+    const userPositionFinal = await getUserPosition(setupData.program, setupData.wallet, marketId);
 }
 
 async function main() {
@@ -230,7 +250,7 @@ async function main() {
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
-    // await buySharesInAmount(setupData, marketId, 1, 1 * 1e6);
+    await buySharesInAmount(setupData, marketId, 0, 1 * 1e6);
 
     // const userPosition = await getUserPosition(setupData.program, setupData.wallet, marketId);
     // console.log("User position: ", userPosition);
