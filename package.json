@@ -3,7 +3,12 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "deploy": "ts-node client/deploy.ts"
+    "deploy": "ts-node client/deploy.ts",
+    "listen": "ts-node client/event_listener.ts",
+    "listen:buy": "ts-node client/event_listener.ts buySharesEvent",
+    "listen:sell": "ts-node client/event_listener.ts sellSharesEvent",
+    "listen:vote": "ts-node client/event_listener.ts voteEvent",
+    "listen:reveal": "ts-node client/event_listener.ts revealProbsEvent"
   },
   "dependencies": {
     "@arcium-hq/client": "0.2.0",
