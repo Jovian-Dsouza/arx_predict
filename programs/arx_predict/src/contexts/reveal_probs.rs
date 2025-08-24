@@ -73,10 +73,6 @@ impl<'info> RevealProbs<'info> {
             self.market_acc.status == MarketStatus::Active,
             ErrorCode::MarketActive
         );
-        require!(
-            self.payer.key() == self.market_acc.authority,
-            ErrorCode::InvalidAuthority
-        );
         let current_timestamp = Clock::get()?.unix_timestamp as u64;
         require!(
             current_timestamp - self.market_acc.updated_at > MARKET_REVEAL_PROBS_TIME,
