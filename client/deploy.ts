@@ -253,7 +253,7 @@ async function main() {
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
-    await buySharesInAmount(setupData, marketId, 1, 1 * 1e6);
+    await buySharesInAmount(setupData, marketId, 1, 0.01 * 1e6);
 
     // const userPosition = await getUserPosition(setupData.program, setupData.wallet, marketId);
     // console.log("User position: ", userPosition);

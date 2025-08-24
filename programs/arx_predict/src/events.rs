@@ -1,18 +1,5 @@
 use anchor_lang::prelude::*;
 
-#[event]
-pub struct VoteEvent {
-    pub market_id: u32,
-    pub timestamp: i64,
-    pub total_votes: u64,
-    pub amount: u64,
-}
-
-#[event]
-pub struct RevealResultEvent {
-    pub market_id: u32,
-    pub output: u8,
-}
 
 #[event]
 pub struct RevealProbsEvent {
