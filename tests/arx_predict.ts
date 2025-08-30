@@ -205,8 +205,6 @@ describe("Voting", () => {
   // This will only log events that aren't being handled by specific listeners
   const listenForAllEvents = () => {
     const allEventTypes: (keyof Event)[] = [
-      "voteEvent",
-      "revealResultEvent", 
       "revealProbsEvent",
       "buySharesEvent",
       "sellSharesEvent",
