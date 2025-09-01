@@ -519,6 +519,9 @@ export async function claimRewards(
   );
 
   const claimRewardsEvent = await claimRewardsEventPromise;
+  const claimRewardsAmountUsdc = claimRewardsEvent.amount / 1e6;
+  console.log(`Claim rewards event=> amount: ${claimRewardsAmountUsdc}`);
+  return claimRewardsEvent;
 }
 
 

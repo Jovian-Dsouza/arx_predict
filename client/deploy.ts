@@ -13,6 +13,7 @@ import {
   withdrawPayment as withdrawPaymentHelper,
   settleMarket as settleMarketHelper,
   claimRewards as claimRewardsHelper,
+  claimMarketFunds as claimMarketFundsHelper,
   getMXEPublicKeyWithRetry,
   fundAndCreateMarket,
   getUserPosition,
@@ -244,8 +245,42 @@ async function buySharesInAmount(
     const userPositionFinal = await getUserPosition(setupData.program, setupData.wallet, marketId);
 }
 
+async function settleMarket(setupData: SetupData, marketId: number, winner: number) {
+    const eventData = await settleMarketHelper(
+        setupData.provider as anchor.AnchorProvider, 
+        setupData.program, 
+        winner, 
+        marketId, 
+        setupData.clusterAccount, 
+        setupData.awaitEvent("marketSettledEvent")
+    );
+    console.log("Market settled: ", eventData);
+
+
+    const claimMarketFundsEvent = await claimMarketFundsHelper(
+        setupData.program, 
+        setupData.wallet,
+        setupData.ata,
+        setupData.mint,
+        marketId, 
+        setupData.awaitEvent("claimMarketFundsEvent")
+    );
+    console.log("Market funds claimed: ", claimMarketFundsEvent);
+
+
+    const claimRewardsEvent = await claimRewardsHelper(
+        setupData.provider as anchor.AnchorProvider, 
+        setupData.program, 
+        setupData.clusterAccount,
+        setupData.wallet,
+        marketId, 
+        setupData.awaitEvent("claimRewardsEvent")
+    );
+    console.log("Rewards claimed: ", claimRewardsEvent);
+}
+
 async function main() {
-    const marketId = 1;
+    const marketId = 3;
     const setupData = await setup();
     // await initCompDefs(setupData);    
     // await createMarket(setupData, marketId);
@@ -253,7 +288,7 @@ async function main() {
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
     // await calculateSharesAndBuy(setupData, marketId, setupData.wallet, 0, 3 * 1e6);
-    await buySharesInAmount(setupData, marketId, 0, 0.01 * 1e6);
+    //await buySharesInAmount(setupData, marketId, 0, 0.01 * 1e6);
 
     // const userPosition = await getUserPosition(setupData.program, setupData.wallet, marketId);
     // console.log("User position: ", userPosition);
@@ -271,6 +306,9 @@ async function main() {
     // await buyShares(setupData);
     // await revealProbs(setupData, marketId);
 
+
+    // close market
+    await settleMarket(setupData, marketId, 0);
 }
 
 main();
