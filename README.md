@@ -2,6 +2,13 @@
 
 ArxPredict is a decentralized prediction market platform built on Solana that leverages Arcium's confidential computing infrastructure to enable privacy-preserving trading and voting mechanisms. The system uses encrypted vote submission and confidential market statistics to ensure user privacy while maintaining market integrity.
 
+## 🔗 Links
+
+- **Frontend**: [arx-predict-frontend](https://github.com/Jovian-Dsouza/arx-predict-frontend) - Web interface for interacting with prediction markets
+- **Backend Server**: [arx_predict](https://github.com/Jovian-Dsouza/arx_predict) - This repository (Solana program + client utilities)
+- **Deployed Contracts**: [View on Solscan](https://solscan.io/account/GYP8ZjJ7eis3S8kTaGnotSiCDBJ2zphNUb1TkqD3Qknf?cluster=devnet) - Live program on Solana Devnet
+- **Presentation**: [ArxPredict Demo](https://www.canva.com/design/DAGx5N_2Kz0/_36cAV3NSYwmpl2EgMSHiw/view?utm_content=DAGx5N_2Kz0&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h2803cc26ad#5) - Project overview and demonstration
+
 ## 🏗️ Architecture Overview
 
 This project combines traditional Solana program development with Arcium's confidential computing capabilities:
