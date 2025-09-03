@@ -27,11 +27,14 @@ import { calculateCost, calculateSharesForAmount } from "./lmsr";
 
 async function createMarket(
     setupData: SetupData,
-    marketId: number
+    marketId: number,
+    options: string[],
+    question: string,
+    liquidityParameter: number = 10
 ) {
-    const liquidityParameter = 10;
-    const options = ["Yes", "No"];
-    const question = `$SOL to 500?`;
+    // const liquidityParameter = 10;
+    // const options = ["Yes", "No"];
+    // const question = `$SOL to 500?`;
 
     console.log("Creating market", marketId, "with liquidity parameter", liquidityParameter);
     const sig = await fundAndCreateMarket(
@@ -279,11 +282,27 @@ async function settleMarket(setupData: SetupData, marketId: number, winner: numb
     console.log("Rewards claimed: ", claimRewardsEvent);
 }
 
+async function createDemoMarkets(setupData: SetupData) {
+    const predictionMarketQuestions: string[] = [
+        "Will Donald Trump win the 2028 U.S. Presidential Election?",
+        "Will Bitcoin reach $100,000 by December 31, 2026?",
+        "Will an AI-generated song win a Grammy Award by 2027?",
+        "Will the U.S. Federal Reserve raise interest rates in July 2026?",
+        "Will a manned mission land on Mars by 2030?",
+        "Will a global temperature record be broken in 2027?"
+      ];
+
+    const marketIdOffset = 4;
+    for(let i = 0; i < predictionMarketQuestions.length; i++) {
+        await createMarket(setupData, i + marketIdOffset, ["Yes", "No"], predictionMarketQuestions[i], 10);
+    }
+}
+
 async function main() {
     const marketId = 3;
     const setupData = await setup();
     // await initCompDefs(setupData);    
-    // await createMarket(setupData, marketId);
+    //await createMarket(setupData, marketId, ["Yes", "No"], `$SOL to 500?`, 10);
 
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);
@@ -308,7 +327,9 @@ async function main() {
 
 
     // close market
-    await settleMarket(setupData, marketId, 0);
+    // await settleMarket(setupData, marketId, 0);
+
+    await createDemoMarkets(setupData);
 }
 
 main();

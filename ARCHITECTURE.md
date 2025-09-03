@@ -187,3 +187,4 @@ mod circuits {
 ---
 
 This architecture provides a robust foundation for privacy-preserving prediction markets while maintaining the performance and security characteristics required for production deployment.
+
