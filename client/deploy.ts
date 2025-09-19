@@ -298,8 +298,15 @@ async function createDemoMarkets(setupData: SetupData) {
     }
 }
 
+async function revealAllMarkets(setupData: SetupData) {
+    for(let i = 9; i <=  9; i++) {
+        const marketStats = await getMarketStats(setupData, i);
+        console.log("Market stats: ", JSON.stringify(marketStats, null, 2));
+    }
+}
+
 async function main() {
-    const marketId = 3;
+    const marketId = 1;
     const setupData = await setup();
     // await initCompDefs(setupData);    
     //await createMarket(setupData, marketId, ["Yes", "No"], `$SOL to 500?`, 10);
@@ -327,9 +334,11 @@ async function main() {
 
 
     // close market
-    // await settleMarket(setupData, marketId, 0);
+    await settleMarket(setupData, marketId, 0);
 
-    await createDemoMarkets(setupData);
+    // await createDemoMarkets(setupData);
+
+    // await revealAllMarkets(setupData);
 }
 
 main();

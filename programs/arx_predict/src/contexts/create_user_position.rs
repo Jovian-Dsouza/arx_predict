@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{UserPosition, MarketAccount, ErrorCode, ID, ID_CONST, COMP_DEF_OFFSET_INIT_USER_POSITION, MAX_OPTIONS};
+use crate::{callbacks::InitUserPositionCallback, ErrorCode, SignerAccount, UserPosition, COMP_DEF_OFFSET_INIT_USER_POSITION, ID, ID_CONST, MAX_OPTIONS};
 
 #[queue_computation_accounts("init_user_position", payer)]
 #[derive(Accounts)]
@@ -52,6 +52,16 @@ pub struct CreateUserPosition<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         init,
         payer = payer,
@@ -69,6 +79,7 @@ impl<'info> CreateUserPosition<'info> {
         nonce: u128,
         computation_offset: u64,
         bump: u8,
+        sign_pda_account_bump: u8,
     ) -> Result<()> {
         self.user_position_acc.bump = bump;
         self.user_position_acc.nonce = nonce;
@@ -77,15 +88,23 @@ impl<'info> CreateUserPosition<'info> {
         self.user_position_acc.market_id = market_id;
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        // Set the bump for the sign_pda_account
+        // Note: The bump will be handled by the Arcium program
+        
+        // Set the bump for the sign_pda_account
+        self.sign_pda_account.bump = sign_pda_account_bump;
+        
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.user_position_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![InitUserPositionCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.user_position_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
 
         Ok(())

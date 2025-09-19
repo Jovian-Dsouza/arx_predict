@@ -282,6 +282,7 @@ pub mod arx_predict {
             nonce,
             computation_offset,
             ctx.bumps.market_acc,
+            ctx.bumps.sign_pda_account,
         )
     }
 
@@ -296,6 +297,7 @@ pub mod arx_predict {
             nonce,
             computation_offset,
             ctx.bumps.user_position_acc,
+            ctx.bumps.sign_pda_account,
         )
     }
 
@@ -313,7 +315,8 @@ pub mod arx_predict {
             vote_encryption_pubkey,
             vote_nonce,
             computation_offset,
-            shares
+            shares,
+            ctx.bumps.sign_pda_account,
         )
     }
 
@@ -331,7 +334,8 @@ pub mod arx_predict {
             vote_encryption_pubkey,
             vote_nonce,
             computation_offset,
-            shares
+            shares,
+            ctx.bumps.sign_pda_account,
         )
     }
 
@@ -373,7 +377,7 @@ pub mod arx_predict {
         id: u32,
         winner: u8,
     ) -> Result<()> {
-        ctx.accounts.settle_market(computation_offset, id, winner)
+        ctx.accounts.settle_market(computation_offset, id, winner, ctx.bumps.sign_pda_account)
     }
 
     pub fn claim_rewards(
@@ -381,7 +385,7 @@ pub mod arx_predict {
         computation_offset: u64,
         _id: u32,
     ) -> Result<()> {
-        ctx.accounts.claim_rewards(computation_offset)
+        ctx.accounts.claim_rewards(computation_offset, ctx.bumps.sign_pda_account)
     }
 
     pub fn fund_market(

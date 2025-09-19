@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{COMP_DEF_OFFSET_CLAIM_REWARDS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, ID, ID_CONST};
+use crate::{callbacks::ClaimRewardsCallback, constants::{COMP_DEF_OFFSET_CLAIM_REWARDS, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, SignerAccount, UserPosition, ID, ID_CONST};
 
 #[queue_computation_accounts("claim_rewards", payer)]
 #[derive(Accounts)]
@@ -52,6 +52,16 @@ pub struct ClaimRewards<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     /// CHECK: Poll authority pubkey
     #[account(
         address = market_acc.authority,
@@ -69,13 +79,14 @@ pub struct ClaimRewards<'info> {
         seeds = [b"user_position", _id.to_le_bytes().as_ref(), payer.key().as_ref()],
         bump
     )]
-    pub user_position_acc: Account<'info, UserPosition>,
+    pub user_position_acc: Box<Account<'info, UserPosition>>,
 }
 
 impl<'info> ClaimRewards<'info> {
     pub fn claim_rewards(
         &mut self,
         computation_offset: u64,
+        sign_pda_account_bump: u8,
     ) -> Result<()> {
         require!(self.market_acc.status == MarketStatus::Settled, ErrorCode::MarketNotSettled);
 
@@ -89,15 +100,23 @@ impl<'info> ClaimRewards<'info> {
             ),
         ];
 
+        // Set the bump for the sign_pda_account
+        // Note: The bump will be handled by the Arcium program
+        
+        // Set the bump for the sign_pda_account
+        self.sign_pda_account.bump = sign_pda_account_bump;
+        
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.user_position_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![ClaimRewardsCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.user_position_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }

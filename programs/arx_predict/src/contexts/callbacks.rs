@@ -4,11 +4,9 @@ use crate::{
     constants::{COMP_DEF_OFFSET_BUY_SHARES, COMP_DEF_OFFSET_CLAIM_REWARDS, COMP_DEF_OFFSET_SELL_SHARES}, MarketAccount, UserPosition, COMP_DEF_OFFSET_INIT_MARKET_STATS, COMP_DEF_OFFSET_INIT_USER_POSITION, COMP_DEF_OFFSET_REVEAL_MARKET, COMP_DEF_OFFSET_REVEAL_PROBS, ID_CONST
 };
 
-#[callback_accounts("init_market_stats", payer)]
+#[callback_accounts("init_market_stats")]
 #[derive(Accounts)]
 pub struct InitMarketStatsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_MARKET_STATS)
@@ -22,11 +20,9 @@ pub struct InitMarketStatsCallback<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("init_user_position", payer)]
+#[callback_accounts("init_user_position")]
 #[derive(Accounts)]
 pub struct InitUserPositionCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_USER_POSITION)
@@ -40,11 +36,9 @@ pub struct InitUserPositionCallback<'info> {
     pub user_position_acc: Account<'info, UserPosition>,
 }
 
-#[callback_accounts("reveal_market", payer)]
+#[callback_accounts("reveal_market")]
 #[derive(Accounts)]
 pub struct RevealMarketCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_MARKET)
@@ -57,11 +51,9 @@ pub struct RevealMarketCallback<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("reveal_probs", payer)]
+#[callback_accounts("reveal_probs")]
 #[derive(Accounts)]
 pub struct RevealProbsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_PROBS)
@@ -74,11 +66,9 @@ pub struct RevealProbsCallback<'info> {
     pub market_acc: Account<'info, MarketAccount>,
 }
 
-#[callback_accounts("buy_shares", payer)]
+#[callback_accounts("buy_shares")]
 #[derive(Accounts)]
 pub struct BuySharesCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_BUY_SHARES)
@@ -93,11 +83,9 @@ pub struct BuySharesCallback<'info> {
     pub user_position_acc: Account<'info, UserPosition>,
 }
 
-#[callback_accounts("sell_shares", payer)]
+#[callback_accounts("sell_shares")]
 #[derive(Accounts)]
 pub struct SellSharesCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SELL_SHARES)
@@ -112,11 +100,9 @@ pub struct SellSharesCallback<'info> {
     pub user_position_acc: Account<'info, UserPosition>,
 }
 
-#[callback_accounts("claim_rewards", payer)]
+#[callback_accounts("claim_rewards")]
 #[derive(Accounts)]
 pub struct ClaimRewardsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_CLAIM_REWARDS)

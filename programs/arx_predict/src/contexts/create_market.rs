@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{check_admin, constants::LN_2_SCALED, states::MarketStatus, ErrorCode, MarketAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
+use crate::{callbacks::InitMarketStatsCallback, check_admin, constants::{LN_2_SCALED}, states::MarketStatus, ErrorCode, MarketAccount, SignerAccount, COMP_DEF_OFFSET_INIT_MARKET_STATS, ID, ID_CONST, MAX_OPTIONS};
+
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Token, Mint, TokenAccount}
@@ -56,6 +57,16 @@ pub struct CreateMarket<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     #[account(
@@ -74,7 +85,7 @@ pub struct CreateMarket<'info> {
         token::mint = mint,
         token::authority = vault
     )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mint::token_program = token_program
@@ -92,6 +103,7 @@ impl<'info> CreateMarket<'info> {
         nonce: u128,
         computation_offset: u64,
         bump: u8,
+        sign_pda_account_bump: u8,
     ) -> Result<()> {
         // Validations
         require!(liquidity_parameter >= 10, ErrorCode::InvalidLiquidityParameter);
@@ -130,16 +142,24 @@ impl<'info> CreateMarket<'info> {
             Argument::PlaintextU128(nonce),
             Argument::PlaintextU64(liquidity_parameter),
         ];
+        // Set the bump for the sign_pda_account
+        // Note: The bump will be handled by the Arcium program
+        
+        // Set the bump for the sign_pda_account
+        self.sign_pda_account.bump = sign_pda_account_bump;
+        
         // Calls init_market_stats
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![InitMarketStatsCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.market_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
 
         Ok(())

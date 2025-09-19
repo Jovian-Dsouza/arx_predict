@@ -84,7 +84,7 @@ export async function setup(): Promise<SetupData> {
     provider,
     program.programId
   );
-  const cipherPrivateKey = x25519.utils.randomPrivateKey();
+  const cipherPrivateKey = x25519.utils.randomSecretKey();
   const cipherPublicKey = x25519.getPublicKey(cipherPrivateKey);
   const cipherSharedSecret = x25519.getSharedSecret(
     cipherPrivateKey,

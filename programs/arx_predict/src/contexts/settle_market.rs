@@ -2,8 +2,9 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 use crate::constants::{COMP_DEF_OFFSET_REVEAL_MARKET, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET};
+use crate::SignerAccount;
 use crate::{states::MarketStatus, ErrorCode, MarketAccount};
-use crate::{ID, ID_CONST};
+use crate::{ID, ID_CONST, callbacks::RevealMarketCallback};
 
 #[queue_computation_accounts("reveal_market", payer)]
 #[derive(Accounts)]
@@ -51,7 +52,16 @@ pub struct SettleMarket<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-   
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         mut,
         seeds = [b"market", id.to_le_bytes().as_ref()],
@@ -66,6 +76,7 @@ impl<'info> SettleMarket<'info> {
         computation_offset: u64,
         _id: u32,
         winner: u8,
+        sign_pda_account_bump: u8,
     ) -> Result<()> {
         require!(
             self.payer.key() == self.market_acc.authority,
@@ -85,15 +96,23 @@ impl<'info> SettleMarket<'info> {
             Argument::PlaintextU8(winner),
         ];
 
+        // Set the bump for the sign_pda_account
+        // Note: The bump will be handled by the Arcium program
+        
+        // Set the bump for the sign_pda_account
+        self.sign_pda_account.bump = sign_pda_account_bump;
+        
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![RevealMarketCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.market_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }
