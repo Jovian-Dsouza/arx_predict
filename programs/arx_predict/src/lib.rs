@@ -15,7 +15,7 @@ use contexts::*;
 use events::*;
 use utils::*;
 
-declare_id!("GYP8ZjJ7eis3S8kTaGnotSiCDBJ2zphNUb1TkqD3Qknf");
+declare_id!("HWBNwkYDMpY7hCy3JPhA1zPgmrfifuxyHw2nWjtvZfKf");
 
 #[arcium_program]
 pub mod arx_predict {

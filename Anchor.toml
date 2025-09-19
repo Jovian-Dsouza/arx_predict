@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-arx_predict = "GYP8ZjJ7eis3S8kTaGnotSiCDBJ2zphNUb1TkqD3Qknf"
+arx_predict = "HWBNwkYDMpY7hCy3JPhA1zPgmrfifuxyHw2nWjtvZfKf"
 
 [registry]
 url = "https://api.apr.dev"
