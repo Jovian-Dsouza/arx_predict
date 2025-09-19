@@ -306,9 +306,10 @@ async function revealAllMarkets(setupData: SetupData) {
 }
 
 async function main() {
+    console.log("Deploying...");
     const marketId = 1;
     const setupData = await setup();
-    // await initCompDefs(setupData);    
+    await initCompDefs(setupData);    
     //await createMarket(setupData, marketId, ["Yes", "No"], `$SOL to 500?`, 10);
 
     // Frontend
@@ -334,7 +335,7 @@ async function main() {
 
 
     // close market
-    await settleMarket(setupData, marketId, 0);
+    // await settleMarket(setupData, marketId, 0);
 
     // await createDemoMarkets(setupData);
 
