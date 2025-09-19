@@ -292,8 +292,8 @@ async function createDemoMarkets(setupData: SetupData) {
         "Will a global temperature record be broken in 2027?"
       ];
 
-    const marketIdOffset = 4;
-    for(let i = 0; i < predictionMarketQuestions.length; i++) {
+    const marketIdOffset = 0;
+    for(let i = 0; i < 1; i++) {
         await createMarket(setupData, i + marketIdOffset, ["Yes", "No"], predictionMarketQuestions[i], 10);
     }
 }
@@ -309,8 +309,8 @@ async function main() {
     console.log("Deploying...");
     const marketId = 1;
     const setupData = await setup();
-    await initCompDefs(setupData);    
-    //await createMarket(setupData, marketId, ["Yes", "No"], `$SOL to 500?`, 10);
+    // await initCompDefs(setupData);    
+    await createMarket(setupData, marketId, ["Yes", "No"], `$SOL to 500?`, 10);
 
     // Frontend
     // await createUserPosition(setupData, marketId, setupData.wallet);

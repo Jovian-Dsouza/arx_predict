@@ -77,10 +77,12 @@ export async function setup(): Promise<SetupData> {
     { commitment: "confirmed" }
   );
   const program = new Program(IDL as any, provider) as Program<ArxPredict>;
-  const clusterOffset = 1116522165;
+  console.log("Program: ", program.programId.toBase58());
+  const clusterOffset = 1078779259;
   const clusterAccount = getClusterAccAddress(clusterOffset);
+  console.log("Cluster account: ", clusterAccount.toBase58());
   const mint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
-  const mxePublicKey = await getMXEPublicKeyWithRetry(
+  const mxePublicKey = await getMXEPublicKey(
     provider,
     program.programId
   );

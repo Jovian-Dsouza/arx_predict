@@ -6,7 +6,7 @@ ArxPredict is a decentralized prediction market platform built on Solana that le
 
 - **Frontend**: [arx-predict-frontend](https://github.com/Jovian-Dsouza/arx-predict-frontend) - Web interface for interacting with prediction markets
 - **Backend Server**: [arx_predict](https://github.com/Jovian-Dsouza/arx_predict) - This repository (Solana program + client utilities)
-- **Deployed Contracts**: [View on Solscan](https://solscan.io/account/EwUP6muecwWHs9NAGXTkftv28pgsthcofA1L4ucs7FBn?cluster=devnet) - Live program on Solana Devnet
+- **Deployed Contracts**: [View on Solscan](https://solscan.io/account/QwUyXjr6YcSmtzqcigtTHDy9fAStMYGxsQgn7Rzrwj9?cluster=devnet) - Live program on Solana Devnet
 - **Presentation**: [ArxPredict Demo](https://www.canva.com/design/DAGx5N_2Kz0/_36cAV3NSYwmpl2EgMSHiw/view?utm_content=DAGx5N_2Kz0&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h2803cc26ad#5) - Project overview and demonstration
 
 ## 🏗️ Architecture Overview
@@ -330,7 +330,7 @@ ISC License - see LICENSE file for details
 ## 🔧 Configuration
 
 ### Program ID
-- **Program ID**: `EwUP6muecwWHs9NAGXTkftv28pgsthcofA1L4ucs7FBn`
+- **Program ID**: `QwUyXjr6YcSmtzqcigtTHDy9fAStMYGxsQgn7Rzrwj9`
 - **Network**: Solana Devnet
 - **USDC Mint**: `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 
