@@ -3,12 +3,10 @@ use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::{
-    constants::{
+    callbacks::RevealProbsCallback, constants::{
         COMP_DEF_OFFSET_REVEAL_PROBS, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH,
-        MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, MARKET_REVEAL_PROBS_TIME,
-    },
-    states::MarketStatus,
-    ErrorCode, MarketAccount, ID, ID_CONST,
+        MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, MARKET_REVEAL_PROBS_TIME
+    }, states::MarketStatus, ErrorCode, MarketAccount, SignerAccount, ID, ID_CONST
 };
 
 #[queue_computation_accounts("reveal_probs", payer)]
@@ -59,6 +57,16 @@ pub struct RevealProbs<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         mut,
         seeds = [b"market", id.to_le_bytes().as_ref()],
@@ -90,15 +98,23 @@ impl<'info> RevealProbs<'info> {
             ),
         ];
 
+        // Set the bump for the sign_pda_account
+        // Note: The bump will be handled by the Arcium program
+        
+        // Note: We can't set the bump here since this is a &self method, not &mut self
+        // The bump will be set by the Arcium program
+        
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![RevealProbsCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.market_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }

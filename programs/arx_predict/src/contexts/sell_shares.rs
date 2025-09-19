@@ -2,7 +2,8 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
-use crate::{constants::{COMP_DEF_OFFSET_SELL_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, UserPosition, ID, ID_CONST, MAX_OPTIONS};
+use crate::{callbacks::SellSharesCallback, constants::{COMP_DEF_OFFSET_SELL_SHARES, MARKET_ACCOUNT_COST_LENGTH, MARKET_ACCOUNT_PROB_LENGTH, MARKET_ACCOUNT_VOTE_STATS_LENGTH, MARKET_ACCOUNT_VOTE_STATS_OFFSET, USER_POSITION_SHARES_LENGTH, USER_POSITION_SHARES_OFFSET}, states::MarketStatus, ErrorCode, MarketAccount, SignerAccount, UserPosition, ID, ID_CONST};
+
 
 #[queue_computation_accounts("sell_shares", payer)]
 #[derive(Accounts)]
@@ -52,6 +53,16 @@ pub struct SellShares<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    /// Sign PDA account for Arcium computations
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     /// CHECK: Poll authority pubkey
     #[account(
         address = market_acc.authority,
@@ -69,7 +80,7 @@ pub struct SellShares<'info> {
         seeds = [b"user_position", _id.to_le_bytes().as_ref(), payer.key().as_ref()],
         bump
     )]
-    pub user_position_acc: Account<'info, UserPosition>,
+    pub user_position_acc: Box<Account<'info, UserPosition>>,
 }
 
 impl<'info> SellShares<'info> {
@@ -80,6 +91,7 @@ impl<'info> SellShares<'info> {
         vote_nonce: u128,
         computation_offset: u64,
         shares: u64,
+        sign_pda_account_bump: u8,
     ) -> Result<()> {
         require!(self.market_acc.status == MarketStatus::Active, ErrorCode::MarketActive);
         let args = vec![
@@ -102,18 +114,24 @@ impl<'info> SellShares<'info> {
             ),
         ];
 
+        // Set the bump for the sign_pda_account
+        self.sign_pda_account.bump = sign_pda_account_bump;
+        
         queue_computation(
             self,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: self.market_acc.key(),
-                is_writable: true,
-            }, CallbackAccount {
-                pubkey: self.user_position_acc.key(),
-                is_writable: true,
-            }],
             None,
+            vec![SellSharesCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: self.market_acc.key(),
+                    is_writable: true,
+                },
+                CallbackAccount {
+                    pubkey: self.user_position_acc.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }
